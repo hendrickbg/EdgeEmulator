@@ -87,30 +87,39 @@ services:
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-  edge_polygon_node0:
-    image: edge_polygon_node0
-    container_name: edge_polygon_node0
-    tty: true
-    depends_on:
-      - bootnode
-      - node0
-    build: 
-      "./Edge/Polygon"
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
+  # edge_polygon_node0:
+  #   image: edge_polygon_node0
+  #   container_name: edge_polygon_node0
+  #   tty: true
+  #   depends_on:
+  #     - bootnode
+  #     - node0
+  #   build: 
+  #     "./Edge/Polygon"
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
 
-  requester_node:
-    image: requester_node
-    container_name: requester_node
-    tty: true
-    depends_on:
-      - bootnode
-      - node0
-      - edge_polygon_node0
-    build: 
-      "./Requester/"
-    volumes:
-      - ~/Documents/EdgeEmulator/Case\ 4/Requester/:/app/Results
-    network_mode: bridge
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
+  # requester_node:
+  #   image: requester_node
+  #   container_name: requester_node
+  #   tty: true
+  #   depends_on:
+  #     - bootnode
+  #     - node0
+  #     - edge_polygon_node0
+  #   build: 
+  #     "./Requester/"
+  #   volumes:
+  #     - ~/Documents/EdgeEmulator/Case\ 4/Requester/:/app/Results
+  #   network_mode: bridge
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
+
+
+
+
+
+
+
+
+

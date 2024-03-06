@@ -34,6 +34,7 @@ def append_nodes(original_content, num_nodes, node_addr):
     # last_node_service = re.findall(r'node\d+:', original_content)[-1]
 
     appended_content = original_content
+    appended_content += "\n################################################################\n"
 
     for i in range(1, num_nodes + 1):
         new_service_name = increment_service_name(last_node_service, i)
@@ -77,19 +78,21 @@ def append_nodes(original_content, num_nodes, node_addr):
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-  edge_polygon_{new_service_name}:
-    image: edge_polygon_{new_service_name}
-    container_name: edge_polygon_{new_service_name}
-    tty: true
-    depends_on:
-      - bootnode
-      - node0
-      - {new_service_name}
-    build: 
-      "./Edge/Polygon"
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
+#   edge_polygon_{new_service_name}:
+#     image: edge_polygon_{new_service_name}
+#     container_name: edge_polygon_{new_service_name}
+#     tty: true
+#     depends_on:
+#       - bootnode
+#       - node0
+#       - {new_service_name}
+#     build: 
+#       "./Edge/Polygon"
+#     extra_hosts:
+#       - "host.docker.internal:172.17.0.1"
 '''
+
+    appended_content += "\n################################################################\n"
 
     return appended_content
 
@@ -151,22 +154,20 @@ def create_ethereum_account(node_n):
 def create_directories(node_n):
     subprocess.run(["mkdir Ethereum/node{}".format(node_n)], shell=True)
 
-def generate_ethereum_node(num_nodes, original_content):
+def generate_ethereum_node(num_nodes):
     global last_node_service
 
     node_addr_list = []
 
-    last_node_service = "node1" #re.findall(r'node\d+:', original_content)[-1]
+    last_node_service = "node1"
 
-    print("LAST NODE SERVICE: ", last_node_service)
-    
     node_n = get_node_number(last_node_service) 
     print("NodeN: ", node_n)
 
-    for i in range(node_n, num_nodes+1):
-      create_directories(i+1)
-      create_ethereum_account(i+1)    
-      keystore_file_name = get_file_name(i+1)
+    for i in range(node_n+1, num_nodes+2):
+      create_directories(i)
+      create_ethereum_account(i)    
+      keystore_file_name = get_file_name(i)
       node_addr = get_node_addr(keystore_file_name)
       update_genesis_file(node_addr)
       node_addr_list.append(node_addr)
@@ -181,16 +182,92 @@ def generate_ethereum_node(num_nodes, original_content):
 
     return node_addr_list
 
+def clear_docker_compose():
+    filename = "./docker-compose.yml"
+
+    try:
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+
+        start_marker_index = None
+        end_marker_index = None
+        for i, line in enumerate(lines):
+            if line.strip() == '################################################################':
+                if start_marker_index is None:
+                    start_marker_index = i
+                else:
+                    end_marker_index = i
+
+        if start_marker_index is not None and end_marker_index is not None:
+            del lines[start_marker_index:end_marker_index + 1]
+
+        with open(filename, 'w') as file:
+            file.writelines(lines)
+
+        print("Docker Compose cleaned successfully!")
+
+    except FileNotFoundError:
+        print(f"File '{filename}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def clear_directories(node_n):
+    for i in range(0, node_n+2):
+        if i < 2:
+            subprocess.run(["rm -r Ethereum/node{}/node/geth".format(i)], shell=True)
+        else:
+            subprocess.run(["rm -r Ethereum/node{}".format(i)], shell=True)
+
+def clear_genesis_file():
+    genesis_file = "Ethereum/genesis.json"
+
+    try:
+        with open(genesis_file, 'r') as file:
+            genesis_data = json.load(file)
+
+        accounts_to_keep = list(genesis_data['alloc'].keys())[:2]
+        accounts_to_delete = list(genesis_data['alloc'].keys())[2:]
+
+        for account in accounts_to_delete:
+            del genesis_data['alloc'][account]
+            # print(f"Account '{account}' has been deleted from the 'alloc' parameter.")
+
+        with open(genesis_file, 'w') as file:
+            json.dump(genesis_data, file, indent=2)
+
+    except FileNotFoundError:
+        print(f"Genesis file '{genesis_file}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def clear_config_edge(node_n):
+    # Clear docker compose
+    clear_docker_compose()
+
+    # Clear all genereted directories
+    clear_directories(node_n)
+
+    # Clear genesis file
+    clear_genesis_file()
+
 def main():
-    num_nodes = int(input("Enter the number of nodes to add: "))
 
-    with open("docker-compose.yml", "r") as input_file:
-        original_content = input_file.read()
-        node_addr_list = generate_ethereum_node(num_nodes, original_content)
+    action_select = int(input("Enter 0 to clean and 1 to append more nodes to the system: "))
 
-        appended_docker_compose = append_nodes(original_content, num_nodes, node_addr_list)
-        with open("docker-compose.yml", "w") as output_file:
-            output_file.write(appended_docker_compose)
+    if action_select == 0:
+        num_nodes = int(input("Enter the number of nodes to clear: "))
+
+        clear_config_edge(num_nodes)
+    else:
+        num_nodes = int(input("Enter the number of nodes to add: "))
+
+        with open("docker-compose.yml", "r") as input_file:
+            original_content = input_file.read()
+            node_addr_list = generate_ethereum_node(num_nodes)
+
+            appended_docker_compose = append_nodes(original_content, num_nodes, node_addr_list)
+            with open("docker-compose.yml", "w") as output_file:
+                output_file.write(appended_docker_compose)
 
 if __name__ == "__main__":
     main()

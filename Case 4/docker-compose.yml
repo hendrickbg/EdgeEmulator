@@ -53,7 +53,41 @@ services:
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-  edgePolygonNode0:
+  node1:
+    hostname: node1
+    container_name: node1
+    image: node1
+    build:
+      context: ./Ethereum/node1
+      dockerfile: Dockerfile
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node1
+      --syncmode full
+      --port 30321
+      --http
+      --http.addr 192.168.0.11
+      --http.port 8547
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8548
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x6d7DCD01A1c7BBE7B42402cd837d9179928E1784
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30321:30321"
+      - "8547:8547"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  edge_polygon_node0:
     image: edge_polygon_node0
     container_name: edge_polygon_node0
     tty: true
@@ -62,7 +96,6 @@ services:
       - node0
     build: 
       "./Edge/Polygon"
-    # network_mode: bridge
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
@@ -73,7 +106,7 @@ services:
     depends_on:
       - bootnode
       - node0
-      - edgePolygonNode0
+      - edge_polygon_node0
     build: 
       "./Requester/"
     volumes:

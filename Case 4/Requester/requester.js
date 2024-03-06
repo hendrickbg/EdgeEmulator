@@ -149,7 +149,7 @@ async function main() {
                 }, timeoutDuration);
 
                 // Run the loop until either the condition is met or the timeout is reached
-                while (outputCid == previousCid && !timeoutReached) {
+                while ((outputCid == previousCid) && !timeoutReached) {
                     for await (const name of ipfs.name.resolve(ipnsName)) {
                         outputCid = name;
                     }
@@ -206,7 +206,9 @@ async function main() {
                     if (err) throw err;
                     console.log('Data appended to the CSV file.');
                 });
-    
+                
+                previousCid = outputCid;
+
                 await new Promise((resolve) => setTimeout(resolve, 1000*60*7));
             }
     

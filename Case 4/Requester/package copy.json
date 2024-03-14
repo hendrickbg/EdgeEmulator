@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "./node_modules/.bin/hardhat --config hardhat.config.js --network polygon_mumbai run polygon_interact.js"
+    "start": "./node_modules/.bin/hardhat --config hardhat.config.js --network polygon_mumbai run cbg_fsm.js"
   },
   "author": "",
   "license": "ISC",

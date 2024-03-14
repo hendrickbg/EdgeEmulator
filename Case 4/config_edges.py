@@ -60,7 +60,7 @@ def append_nodes(original_content, num_nodes, node_addr):
       --syncmode full
       --port {node_port}
       --http
-      --http.addr 192.168.0.11
+      --http.addr 191.4.204.172
       --http.port {http_port}
       --http.api eth,net,web3,miner,admin
       --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
@@ -78,18 +78,18 @@ def append_nodes(original_content, num_nodes, node_addr):
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-#   edge_polygon_{new_service_name}:
-#     image: edge_polygon_{new_service_name}
-#     container_name: edge_polygon_{new_service_name}
-#     tty: true
-#     depends_on:
-#       - bootnode
-#       - node0
-#       - {new_service_name}
-#     build: 
-#       "./Edge/Polygon"
-#     extra_hosts:
-#       - "host.docker.internal:172.17.0.1"
+  device_{new_service_name}:
+    image: device_{new_service_name}
+    container_name: device_{new_service_name}
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - {new_service_name}
+    build: 
+      "./Edge/Device_Node"
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
 '''
 
     appended_content += "\n################################################################\n"

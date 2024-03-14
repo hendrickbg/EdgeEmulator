@@ -1,83 +1,49 @@
 version: '3.7'
 services:
-  cloudBroker:
-    image: cloud_broker
-    container_name: cloud_broker
-    build: 
-      "./Cloud/Broker"
-    ports:
-      - "3010:3010"
-  cloudClient:
-    image: cloud_client
-    container_name: cloud_client
-    build: 
-      "./Cloud/cloudClient"
-    ports:
-      - "3002:3002"
-  cloudPublisher:
-    image: cloud_publisher
-    container_name: cloud_publisher
-    build: 
-      "./Cloud/cloudPublisher"
-  cloudServer:
-    image: cloud_server
-    container_name: cloud_server
-    build: 
-      "./Cloud/cloudServer"
-    ports:
-      - "3020:3020"
-    depends_on:
-      - mongodb
-    links:
-      - mongodb
-    environment:
-      WAIT_HOSTS: mongodb:27017
-  edgeBroker:
-    image: edge_broker
-    container_name: edge_broker
-    build: 
-      "./Edge/Broker"
-    ports:
-      - "3005:3005"
-  edgeDataManager:
-    image: edge_data_manager
-    container_name: edge_data_manager
-    build: 
-      "./Edge/DataManager"
-    depends_on:
-      - mongodb
-      - cloudServer
-  edgeIoTDevSim:
-    image: edge_iot_dev_sim
-    container_name: edge_iot_dev_sim
-    mem_limit: 1g
-    build: 
-      "./Edge/IoTDevSim"
-    blkio_config:
-      weight: 300
-  edgeIoTSmartDev:
-    image: edge_iot_smart_dev
-    container_name: edge_iot_smart_dev
-    build: 
-      "./Edge/IoTSmartDev"
-  edgeSubscriber:
-    image: edge_subscriber
-    container_name: edge_subscriber
-    build: 
-      "./Edge/subscriber"
+  # edgeDataManager:
+  #   image: edge_data_manager
+  #   container_name: edge_data_manager
+  #   build: 
+  #     "./Edge/DataManager"
+  #   depends_on:
+  #     - mongodb
+  # edgeIoTDevSim:
+  #   image: edge_iot_dev_sim
+  #   container_name: edge_iot_dev_sim
+  #   mem_limit: 1g
+  #   build: 
+  #     "./Edge/IoTDevSim"
+  #   blkio_config:
+  #     weight: 300
+  # edgeIoTSmartDev:
+  #   image: edge_iot_smart_dev
+  #   container_name: edge_iot_smart_dev
+  #   build: 
+  #     "./Edge/IoTSmartDev"
   edgePolygon:
     image: edge_polygon
     container_name: edge_polygon
     build: 
       "./Edge/Polygon"
+    networks:
+      - private_network
     ports:
       - "4001:4001"
       - "5001:5001"
-  mongodb:
-      image: mongo:latest
-      ports:
-        - "27017:27017"
-        - "27018:27018"
 
-volumes:
-  mongo-db:
+networks:
+      private_network:
+        ipam:
+          config:
+            - subnet: 172.20.10.0/28
+              gateway: 172.20.10.1
+
+# networks:
+#       private_network:
+#         ipam:
+#           config:
+#             - subnet: 192.168.0.0/24
+#               gateway: 192.168.0.1
+
+# volumes:
+#   mongo-db:

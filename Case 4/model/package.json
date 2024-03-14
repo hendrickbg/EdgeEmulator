@@ -1,0 +1,23 @@
+{
+  "name": "edgeexperiment",
+  "version": "1.0.0",
+  "description": "Mosca MQTT broker implemented as an NodeJS API for an edge computing experiment",
+  "main": "broker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmatheuslyra/EdgeExperiment.git"
+  },
+  "author": "Matheus Lyra da Silva",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mmatheuslyra/EdgeExperiment/issues"
+  },
+  "homepage": "https://github.com/mmatheuslyra/EdgeExperiment#readme",
+  "dependencies": {
+    "mosca": "^2.8.3",
+    "mqtt": "^4.2.6"
+  }
+}

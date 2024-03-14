@@ -140,9 +140,9 @@
   "Swarm": {
     "AddrFilters": null,
     "ConnMgr": {
-      "GracePeriod": "60s",
-      "HighWater": 200,
-      "LowWater": 150,
+      "GracePeriod": "30s",
+      "HighWater": 15,
+      "LowWater": 10,
       "Type": "basic"
     },
     "DisableBandwidthMetrics": false,

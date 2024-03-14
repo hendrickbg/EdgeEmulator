@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "init": "node ipfs_daemon.js",
     "start": "./node_modules/.bin/hardhat --config hardhat.config.js --network polygon_mumbai run polygon_interact.js"
   },
   "author": "",
@@ -14,7 +13,10 @@
     "ethers": "^5.7.2",
     "hardhat": "^2.18.2",
     "ipfs-core": "^0.18.1",
-    "ipfs-http-client": "^60.0.1"
+    "ipfs-http-client": "^60.0.1",
+    "axios": "^1.6.2",
+    "form-data": "^4.0.0",
+    "fs": "^0.0.1-security"
   },
   "dependencies": {
     "dotenv": "^16.3.1"

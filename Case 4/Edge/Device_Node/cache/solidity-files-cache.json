@@ -38,8 +38,8 @@
       ]
     },
     "/home/student/Documents/hendrick/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Gateway_Catalog.sol": {
-      "lastModificationDate": 1710539926506,
-      "contentHash": "45f577dbaac5b3b610a90a548688aaf2",
+      "lastModificationDate": 1710592792660,
+      "contentHash": "52a576b3ecabc2efa93622ec698b412e",
       "sourceName": "contracts/Gateway_Catalog.sol",
       "solcConfig": {
         "version": "0.8.9",

@@ -16,26 +16,57 @@ const catalogContract = new ethers.Contract(CATALOG_CONTRACT_ADDRESS, abi, signe
 
 const REQUESTED_DEVICE_ID = '0';
 
+async function catIpfsGateway(cid) {
+    try {
+      const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
+      //console.log(response.data);
+      return response.data;
+    } catch (error) {
+      return "";
+    }
+}
+  
 async function catIpfs(ipfs, cid) {
     var data = '';
     var metadata_chunks;
     var contentString = '';
     
+    var errorFlag = false;
+  
     while(true) {
       try { 
-        console.log("Fetching content from CID: ", cid);
-        
-        data = ipfs.cat(cid);
-        metadata_chunks = []
-        for await (const chunk of data) {
-            metadata_chunks.push(chunk)
-        }
-        contentString = Buffer.concat(metadata_chunks).toString();
   
-        return contentString;
+        if(errorFlag == false) {
+          console.log("Fetching content from CID: ", cid);
+        
+          data = ipfs.cat(cid, { timeout: 30*1000});
+          metadata_chunks = []
+          for await (const chunk of data) {
+              metadata_chunks.push(chunk)
+          }
+          contentString = Buffer.concat(metadata_chunks).toString();
+  
+          return contentString;
+  
+        } else {
+          console.log("Trying to fetch IPFS data from gateway...");
+  
+          contentString = await catIpfsGateway(cid);
+  
+          if(contentString == "") {
+            errorFlag = false;
+            console.log("Error trying to fetch IPFS data again...");
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+          } else {
+            return contentString;
+          }
+        }
+        
       } catch(error) {
-        console.log("Error: ",  error);
+        //console.log("Error: ",  error);
         console.log("Error trying to fetch IPFS data again...");
+        errorFlag = true;
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
@@ -48,14 +79,47 @@ async function getRandomFarm(farmList) {
     return farmList[randomIndex];
 }
 
+async function importFarmMenuIpnsKeyName(ipfs) {
+    console.log("Importing FarmMenuSecretKey...");
+
+    const secretKeyCid = await catalogContract.farmMenuListSecretKey(); 
+    console.log("Secret key CID: ", secretKeyCid);
+  
+    // const exportedKey = Buffer.concat(metadata_chunks).toString()
+    const exportedKey = await catIpfs(ipfs, secretKeyCid);
+    // const exportedKey = await catIpfsGateway(secretKeyCid);
+    console.log("Key exported: ", exportedKey);
+  
+    const clone = "FarmMenuListSecretKey_Farm" + FARM_ID;
+    console.log("Checking if key exist ...");
+    keyExists = await checkIPNSKeyNameExists(ipfs, clone);
+  
+    if(keyExists == false) {
+      //const key = await ipfs.key.import(clone, exportedKey, '123456');
+      const keyFile = clone;
+      console.log("Creating key file: ", keyFile);
+      await createKeyFile(exportedKey, `${keyFile}.key`);
+      console.log("Importing key...");
+      const key = await importKey(clone, keyFile);
+  
+      console.log("\nKey imported: ", key);
+      return key;
+    }
+  
+    return clone;
+}
+
 async function main() {
     let { create } = await import('ipfs-http-client');
     let ipfs = await create({ url: 'http://127.0.0.1:5001' });
     let farmList = [];
     let farmDictionary = {};
+    let cid = "";
 
-    //waits 10 minutos to properly initialize the system
-    await new Promise((resolve) => setTimeout(resolve, 1000*60*10));
+    //waits 5 minutos to properly initialize the system
+    await new Promise((resolve) => setTimeout(resolve, 1000*60*2));
+
+    await importFarmMenuIpnsKeyName(ipfs);
 
     //While there is no farm registered in the system
     while(farmList.length == 0) {
@@ -65,9 +129,21 @@ async function main() {
         const result = await catalogContract.farmMenuListIpnsKey();
         console.log("Request result: ", result);
 
-        for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
-            cid = name;
+        while(true) {
+            for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
+                cid = name;
+            }
+            
+            if(cid != "") {
+                break;
+            } else {
+                console.log(`Error resolving ${result}, trying again...`);
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+
+            console.log("CID Resolved: ", cid);
         }
+
         
         console.log("CID: ", cid.replace('/ipfs/', ''));
         var contentString = "";

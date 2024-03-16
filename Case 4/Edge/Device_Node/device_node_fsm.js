@@ -6,6 +6,7 @@ const path = require('path'); // Add the path module
 const { exec } = require('child_process');
 const moment = require('moment');
 const Web3 = require('web3');
+const os = require('os');
 
 ////////////////////////////////////////PUBLIC POLYGON CODE//////////////////////////////////////////////////////
 
@@ -29,6 +30,7 @@ var fileContent = "";
 var cnt = 0;
 const fileName = 'ipfs_file.txt';
 
+var nodeIpnsKey = "";
 const FARM_ID = "0";
 var farmOutputIpnsPk = "";
 let farmSc = "";
@@ -40,7 +42,7 @@ const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8');
-const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
@@ -118,73 +120,55 @@ async function generateGtwCatalogInstance() {
   gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
 }
 
-async function checkPrivateCatalog(ipfs) {
-
-  var privateKeyCid = await gtwCatalogContract.methods.privateKeyCid().call();
-  console.log("PrivateKey: ", privateKeyCid);
-
-  var keyExists = false;
-  var key = "";
-
-  if(privateKeyCid == '') {
-    const privateScIpnsSk = 'IpnsSecretKey'; //ipns key name
-
-    keyExists = await checkIPNSKeyNameExists(ipfs, privateScIpnsSk);
-
-    if(keyExists == false) {
-      console.log("Generating a new IPNS key for Gateway Catalog...");
-      key = await ipfs.key.gen(privateScIpnsSk, { type: 'rsa', size: 2048 });
-    } else{
-      const keys = await ipfs.key.list();
-      key = await keys.find((k) => k.name === privateScIpnsSk);
-    }
-
-    //const exportedKey = await ipfs.key.export(privateScIpnsSk);
-    const tmpKey = await exportKey(privateScIpnsSk);
-    const tmpPath = 'exportedKey.key';
-    const exportedKey = await readFileAndDecode(tmpPath);
-
-    var ipfs_cid = await addIpfsFile(exportedKey);
-    await ipfsAddLocal(ipfs, exportedKey); //replicate to accelerate the ipns publish
-
-    var tx = await gtwCatalogContract.methods.setOuputIpnsKey(ipfs_cid).call();
-    
-    // Wait for the transaction to be mined
-    await tx.wait();
-
-    var ipfs_cid = await addIpfsFile("-1;-1;-1;-1;-1;-1");
-    await ipfsAddLocal(ipfs, "-1;-1;-1;-1;-1;-1"); //replicate to accelerate the ipns publish
-
-    //populate this IPNS key
-    await publishToIpns(ipfs, ipfs_cid, privateScIpnsSk, 1000*30); //15s of timeout
-
-    tx = await gtwCatalogContract.methods.setCatalogIpnsKey(key.id).call();
-    await tx.wait();
-  }
+async function importCatalogIpnsKeyName(ipfs) {
   
-  var outputIpnsKey = await gtwCatalogContract.methods.outputIpnsKey().call();
-  console.log("OutputIpnsKey: ", outputIpnsKey);
+  console.log("Importing Catalog IPNS key...");
+  const privateKeyCid = await gtwCatalogContract.methods.privateKeyCid().call(); 
 
-  if(outputIpnsKey == '') {
-    const outputIpnsKey = 'PrivateOutputIpnsKey'; //ipns public key name
+  const exportedKey = await catIpfs(ipfs, privateKeyCid);
+  console.log("IPFS output: ", exportedKey);
 
-    keyExists = await checkIPNSKeyNameExists(ipfs, outputIpnsKey);
+  var fileName = path.basename(__filename);
+  fileName = fileName.replace(".js", "");
 
-    if(keyExists == false) {
-      console.log("Generating a new Private Output IPNS key for Gateway Catalog...");
-      key = await ipfs.key.gen(outputIpnsKey, { type: 'rsa', size: 2048 });
-    } else{
-      const keys = await ipfs.key.list();
-      key = await keys.find((k) => k.name === outputIpnsKey);
-    }
+  const clone = "IpnsSecretKey";
+  const keyFile = clone;
 
-    tx = await gtwCatalogContract.methods.setOuputIpnsKey(key.id).call();
-    await tx.wait();
-  }
+  await createKeyFile(exportedKey, `${keyFile}.key`);
+  const key = await importKey(clone, keyFile);
+
+  console.log("\nCatalog Key imported: ", key);
 }
 
+async function importOutputIpnsKeyName(ipfs) {
 
+  console.log("Importing Output IPNS key...");
 
+  const outputIpnsPrivateKey = await gtwCatalogContract.methods.outputIpnsPrivateKey().call(); 
+
+  const exportedKey = await catIpfs(ipfs, outputIpnsPrivateKey);
+  console.log("IPFS output: ", exportedKey);
+
+  var fileName = path.basename(__filename);
+  fileName = fileName.replace(".js", "");
+
+  const clone = "PrivateOutputIpnsKey";
+  const keyFile = clone;
+
+  await createKeyFile(exportedKey, `${keyFile}.key`);
+  const key = await importKey(clone, keyFile);
+
+  console.log("\nOutput Key imported: ", key);
+}
+
+async function checkPrivateCatalog(ipfs) {
+  
+  await importCatalogIpnsKeyName(ipfs);
+  await importOutputIpnsKeyName(ipfs);
+
+  outputIpnsKey = await gtwCatalogContract.methods.outputIpnsKey().call();
+  console.log("OutputIpnsKey: ", outputIpnsKey);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -257,7 +241,7 @@ async function catIpfsGateway(cid) {
     //console.log(response.data);
     return response.data;
   } catch (error) {
-    console.error(error);
+    return "";
   }
 }
 
@@ -266,21 +250,42 @@ async function catIpfs(ipfs, cid) {
   var metadata_chunks;
   var contentString = '';
   
+  var errorFlag = false;
+
   while(true) {
     try { 
-      console.log("Fetching content from CID: ", cid);
-      
-      data = ipfs.cat(cid);
-      metadata_chunks = []
-      for await (const chunk of data) {
-          metadata_chunks.push(chunk)
-      }
-      contentString = Buffer.concat(metadata_chunks).toString();
 
-      return contentString;
+      if(errorFlag == false) {
+        console.log("Fetching content from CID: ", cid);
+      
+        data = ipfs.cat(cid, { timeout: 30*1000});
+        metadata_chunks = []
+        for await (const chunk of data) {
+            metadata_chunks.push(chunk)
+        }
+        contentString = Buffer.concat(metadata_chunks).toString();
+
+        return contentString;
+
+      } else {
+        console.log("Trying to fetch IPFS data from gateway...");
+
+        contentString = await catIpfsGateway(cid);
+
+        if(contentString == "") {
+          errorFlag = false;
+          console.log("Error trying to fetch IPFS data again...");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        } else {
+          return contentString;
+        }
+      }
+      
     } catch(error) {
-      console.log("Error: ",  error);
+      //console.log("Error: ",  error);
       console.log("Error trying to fetch IPFS data again...");
+      errorFlag = true;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
@@ -822,8 +827,20 @@ async function checkPublicCatalog(ipfs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+async function getContainerName() {
+  const containerName = process.env.CONTAINER_NAME;
+  console.log("Container name: ", containerName);
+
+  const parts = containerName.split('node');
+  console.log("Parts: ", parts);
+  const nodeNumber = parseInt(parts[1]);
+  const deviceID = isNaN(nodeNumber) ? 'unknown' : nodeNumber.toString();
+  console.log("Device ID: ", deviceID);
+  return deviceID;
+}
+
 async function getSensorData() {
-  const deviceID = '0';
+  const deviceID = await getContainerName();
   const temperature = Math.floor(Math.random() * 31); // Random integer between 0 and 30
   const humidity = Math.floor(Math.random() * 21) + 40; // Random integer between 40 and 60
   const latitude = (Math.random() * 180) - 90;
@@ -898,15 +915,30 @@ function waitForEvents() {
 async function getFarmMenuAddr(ipfs) {
 
     let farmMenuAddr = "";
+    let result = "";
 
-    const result = await catalogContract.farmMenuListIpnsKey();
+    while(true) {
+      result = await catalogContract.farmMenuListIpnsKey();
+      console.log("FarmMenuList Result: ", result); 
+
+      if(result != "") {
+        break;
+      } else {
+        console.log("None FarmMenuList detect, trying again...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+
+    let cid;
 
     while(farmMenuAddr == "") {
 
       for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
           cid = name;
       }
-
+      
+      console.log("CID Resolved From FarmMenuList: ", cid);
       console.log("CID: ", cid.replace('/ipfs/', ''));
       var contentString = "";
 
@@ -953,7 +985,7 @@ async function node_fsm() {
   let isGeneratingMetadata = false; // Flag to indicate if generateMetadataAndProcess is running
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10 seconds
-
+  
   await generateGtwCatalogInstance();
 
   await waitForCatalogReady(ipfs)
@@ -982,6 +1014,9 @@ async function node_fsm() {
         const datasetExists = await checkDatasetIpns(ipfs, deviceID);
         if (!datasetExists) {
           await generateNodeIpnsKey(ipfs, deviceID);
+        } else {
+          nodeIpnsKey = "Farm" + FARM_ID + '_' + "Device" + deviceID + "IpnsKey"; //ipns key name
+          console.log("nodeIpnsKey: ", nodeIpnsKey);
         }
       
         const lastCid = await getLastIpfsCid(ipfs, deviceID);
@@ -1011,7 +1046,7 @@ async function node_fsm() {
     } else {
       console.log("Waiting for generateMetadataAndProcess to finish before triggering again...");
     }
-  }, 6 * 60 * 1000);
+  }, 1 * 60 * 1000); //1 minute
 }
 
 node_fsm();

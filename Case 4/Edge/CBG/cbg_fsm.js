@@ -40,7 +40,7 @@ const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8')
-const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
@@ -84,11 +84,11 @@ async function getLastScAddress() {
 async function deployContract() {
   try {
       // Deploy the contract
-      const tmp = await contractInterface.deploy();
+      gtwCatalogContract = await contractInterface.deploy();
       
       // Contract deployed successfully, you can access its address and other details
-      console.log('Contract deployed at address:', tmp.address);
-      return tmp.address;
+      console.log('Contract deployed at address:', gtwCatalogContract.address);
+      return gtwCatalogContract.address;
   } catch (error) {
       console.error('Error deploying contract:', error);
       return null;
@@ -98,9 +98,9 @@ async function deployContract() {
 async function checkPrivateCatalog(ipfs) {
 
   gtwContractAddress = await deployContract();
-  gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
+  //gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
 
-  var privateKeyCid = await gtwCatalogContract.methods.privateKeyCid().call();
+  var privateKeyCid = await gtwCatalogContract.privateKeyCid();
   console.log("PrivateKey: ", privateKeyCid);
 
   var keyExists = false;
@@ -127,7 +127,7 @@ async function checkPrivateCatalog(ipfs) {
     var ipfs_cid = await addIpfsFile(exportedKey);
     await ipfsAddLocal(ipfs, exportedKey); //replicate to accelerate the ipns publish
 
-    var tx = await gtwCatalogContract.methods.setOuputIpnsKey(ipfs_cid).call();
+    var tx = await gtwCatalogContract.setPrivateKeyCid(ipfs_cid);
     
     // Wait for the transaction to be mined
     await tx.wait();
@@ -138,11 +138,11 @@ async function checkPrivateCatalog(ipfs) {
     //populate this IPNS key
     await publishToIpns(ipfs, ipfs_cid, privateScIpnsSk, 1000*30); //15s of timeout
 
-    tx = await gtwCatalogContract.methods.setCatalogIpnsKey(key.id).call();
+    tx = await gtwCatalogContract.setCatalogIpnsKey(key.id);
     await tx.wait();
   }
   
-  var outputIpnsKey = await gtwCatalogContract.methods.outputIpnsKey().call();
+  var outputIpnsKey = await gtwCatalogContract.outputIpnsKey();
   console.log("OutputIpnsKey: ", outputIpnsKey);
 
   if(outputIpnsKey == '') {
@@ -158,7 +158,21 @@ async function checkPrivateCatalog(ipfs) {
       key = await keys.find((k) => k.name === outputIpnsKey);
     }
 
-    tx = await gtwCatalogContract.methods.setOuputIpnsKey(key.id).call();
+    tx = await gtwCatalogContract.setOuputIpnsKey(key.id);
+    await tx.wait();
+
+    console.log("Exporting Output Private key...");
+    
+    await exportKey(outputIpnsKey);
+    const outputTmpPath = 'exportedKey.key';
+    const outputExportedKey = await readFileAndDecode(outputTmpPath);
+    console.log("OuputExportedKey: ", outputExportedKey);
+
+    const outputIpfsCid = await addIpfsFile(outputExportedKey);
+    await ipfsAddLocal(ipfs, outputExportedKey); //replicate to accelerate the ipns publish
+
+    console.log("Transmitting Output Private Key to Gtw Sc...");
+    tx = await gtwCatalogContract.setOutputIpnsPrivateKey(outputIpfsCid);
     await tx.wait();
   }
 }
@@ -306,7 +320,7 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
   await publishToIpns(ipfs, ipfs_cid, nodeIpnsKey, 1000*30); //15s of timeout
 
   //publishes its dataset IPNS key to catalog IPNS key
-  const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
+  const catalogIpnsKey = await gtwCatalogContract.catalogIpnsKey(); 
   const ipnsName = '/ipns/' + catalogIpnsKey;
   let ipfsCid;
 
@@ -331,7 +345,7 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
 }
 
 async function checkDatasetIpns(ipfs, deviceID) {
-  const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
+  const catalogIpnsKey = await gtwCatalogContract.catalogIpnsKey(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
   
   let cid;
@@ -368,7 +382,7 @@ async function checkDatasetIpns(ipfs, deviceID) {
 }
 
 async function getLastIpfsCid(ipfs, deviceID) {
-  const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
+  const catalogIpnsKey = await gtwCatalogContract.catalogIpnsKey(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
 
   let cid;
@@ -919,7 +933,7 @@ async function node_fsm() {
         console.log("FarmDataRequested!");
         
         //catalogIpnsKey
-        const ipnsPk = await gtwCatalogContract.methods.catalogIpnsKey().call();
+        const ipnsPk = await gtwCatalogContract.catalogIpnsKey();
         console.log("PK that will be sent: ", ipnsPk);
 
         ipfs_cid = await addIpfsFile(ipnsPk);

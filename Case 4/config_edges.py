@@ -80,6 +80,8 @@ def append_nodes(original_content, num_nodes, node_addr):
 
   device_{new_service_name}:
     image: device_{new_service_name}
+    environment:
+      - CONTAINER_NAME=device_{new_service_name}
     container_name: device_{new_service_name}
     tty: true
     depends_on:

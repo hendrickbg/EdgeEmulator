@@ -31,7 +31,7 @@ services:
       --syncmode full
       --port 30320
       --http
-      --http.addr 191.4.204.172
+      --http.addr 172.16.5.1
       --http.port 8545
       --http.api eth,net,web3,miner,admin
       --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
@@ -69,7 +69,7 @@ services:
       --syncmode full
       --port 30321
       --http
-      --http.addr 191.4.204.172
+      --http.addr 172.16.5.1
       --http.port 8547
       --http.api eth,net,web3,miner,admin
       --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
@@ -127,10 +127,6 @@ services:
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
       
-
-
-
-
 ################################################################
 
   node2:
@@ -149,7 +145,7 @@ services:
       --syncmode full
       --port 30322
       --http
-      --http.addr 191.4.204.172
+      --http.addr 172.16.5.1
       --http.port 8551
       --http.api eth,net,web3,miner,admin
       --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
@@ -157,7 +153,7 @@ services:
       --authrpc.port 8552
       --http.corsdomain=*
       --networkid=1214
-      --unlock 0x85eddc8d5256f5fdc883b017397594c31fb50b34
+      --unlock 0x6e8df0180dd23f6dcab3578809e5d40ecadbd610
       --password /app/password.txt
       --allow-insecure-unlock console
     ports:
@@ -175,6 +171,53 @@ services:
       - bootnode
       - node0
       - node2
+    build: 
+      "./Edge/Device_Node"
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node3:
+    hostname: node3
+    container_name: node3
+    image: node3
+    build:
+      context: ./Ethereum/node3
+      dockerfile: Dockerfile
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node3
+      --syncmode full
+      --port 30325
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8556
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8557
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x5b9c5b6349349140f03dc964ae99d74594be1f5f
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30325:30325"
+      - "8556:8556"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node3:
+    image: device_node3
+    container_name: device_node3
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node3
     build: 
       "./Edge/Device_Node"
     extra_hosts:

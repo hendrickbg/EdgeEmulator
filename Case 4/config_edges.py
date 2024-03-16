@@ -60,7 +60,7 @@ def append_nodes(original_content, num_nodes, node_addr):
       --syncmode full
       --port {node_port}
       --http
-      --http.addr 191.4.204.172
+      --http.addr 172.16.5.1
       --http.port {http_port}
       --http.api eth,net,web3,miner,admin
       --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"

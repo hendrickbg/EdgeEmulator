@@ -6,9 +6,12 @@ WORKDIR /app
 # Install IPFS
 RUN apk add gcompat
 
-RUN wget https://dist.ipfs.tech/kubo/v0.18.1/kubo_v0.18.1_linux-amd64.tar.gz && \
-    tar -xvzf kubo_v0.18.1_linux-amd64.tar.gz && \
+# Copy the entire app directory into the container
+COPY . /app
+
+RUN tar -xvzf /app/IPFS/kubo_v0.18.1_linux-amd64.tar.gz && \
     ./kubo/install.sh
+
 # COPY config /app/config
 
 RUN ipfs init
@@ -18,9 +21,6 @@ RUN ipfs init
 # Copy package.json and install dependencies
 COPY package.json /app
 # RUN npm install
-
-# Copy the entire app directory into the container
-COPY . /app
 
 # # # Install jq
 # RUN apk --no-cache add jq

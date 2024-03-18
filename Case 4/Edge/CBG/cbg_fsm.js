@@ -40,11 +40,12 @@ const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8')
-const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+const privContractAbi = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getCatalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPrivateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
 const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
-let gtwContractAddress;
+let gtwContractAddress = "";
 
 const web3 = new Web3('http://172.16.5.1:8545');
 
@@ -98,15 +99,19 @@ async function deployContract() {
 async function checkPrivateCatalog(ipfs) {
 
   gtwContractAddress = await deployContract();
-  //gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
+  // gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
 
-  var privateKeyCid = await gtwCatalogContract.privateKeyCid();
+  // Stores the gtw sc address in the farm menu to use in the device nodes
+  console.log("Storing gtw sc addr to catalog: ", gtwContractAddress);
+  await farmMenuContract.setGtwScAddr(gtwContractAddress);
+  
+  const privateKeyCid = await gtwCatalogContract.privateKeyCid();
   console.log("PrivateKey: ", privateKeyCid);
 
   var keyExists = false;
   var key = "";
 
-  if(privateKeyCid == '') {
+  if(privateKeyCid == "0") {
     const privateScIpnsSk = 'IpnsSecretKey'; //ipns key name
 
     keyExists = await checkIPNSKeyNameExists(ipfs, privateScIpnsSk);
@@ -145,7 +150,7 @@ async function checkPrivateCatalog(ipfs) {
   var outputIpnsKey = await gtwCatalogContract.outputIpnsKey();
   console.log("OutputIpnsKey: ", outputIpnsKey);
 
-  if(outputIpnsKey == '') {
+  if(outputIpnsKey == "0") {
     const outputIpnsKey = 'PrivateOutputIpnsKey'; //ipns public key name
 
     keyExists = await checkIPNSKeyNameExists(ipfs, outputIpnsKey);
@@ -236,7 +241,7 @@ const writeToFile = (filePath, content) => {
   });
 };
 
-async function updaIpfsList(hash) {
+async function updaIpfsList(ipfs, hash) {
   const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss:SSS');
   const metadata = currentTimestamp + ';' + hash;
   
@@ -921,7 +926,7 @@ async function node_fsm() {
       if(info.eventName == "DataDeviceRequested") {
         console.log("Searching for Device: ", info.deviceID);
         const lastCid = await getLastIpfsCid(ipfs, info.deviceID);
-        const txCid = await updaIpfsList(lastCid);
+        const txCid = await updaIpfsList(ipfs, lastCid);
 
         console.log("CID that will be sent: ", txCid);
 
@@ -966,49 +971,49 @@ async function node_fsm() {
         // Handle the error accordingly
   });
 
-  const generateMetadataAndProcess = async () => {
-    if (!isHandlingEvent && !isGeneratingMetadata) { // Check if handleEvent and generateMetadataAndProcess are not running
-      isGeneratingMetadata = true; // Set the flag to true while generateMetadataAndProcess is running
+  // const generateMetadataAndProcess = async () => {
+  //   if (!isHandlingEvent && !isGeneratingMetadata) { // Check if handleEvent and generateMetadataAndProcess are not running
+  //     isGeneratingMetadata = true; // Set the flag to true while generateMetadataAndProcess is running
 
-      try {
-        console.log("\n\nReading new sensor data...");
-        const metadata = await getSensorData();
-        const deviceIDList = metadata.split(';');
-        const deviceID = deviceIDList[0];
+  //     try {
+  //       console.log("\n\nReading new sensor data...");
+  //       const metadata = await getSensorData();
+  //       const deviceIDList = metadata.split(';');
+  //       const deviceID = deviceIDList[0];
       
-        const datasetExists = await checkDatasetIpns(ipfs, deviceID);
-        if (!datasetExists) {
-          await generateNodeIpnsKey(ipfs, deviceID);
-        }
+  //       const datasetExists = await checkDatasetIpns(ipfs, deviceID);
+  //       if (!datasetExists) {
+  //         await generateNodeIpnsKey(ipfs, deviceID);
+  //       }
       
-        const lastCid = await getLastIpfsCid(ipfs, deviceID);
-        const data = metadata + ';' + lastCid;
+  //       const lastCid = await getLastIpfsCid(ipfs, deviceID);
+  //       const data = metadata + ';' + lastCid;
       
-        console.log("Next value: ", data);
-        const ipfs_cid = await addIpfsFile(data);
-        await ipfsAddLocal(ipfs, data); //replicate to accelerate the ipns publish
+  //       console.log("Next value: ", data);
+  //       const ipfs_cid = await addIpfsFile(data);
+  //       await ipfsAddLocal(ipfs, data); //replicate to accelerate the ipns publish
       
-        await publishToIpns(ipfs, ipfs_cid, nodeIpnsKey, 30*1000);
-      } catch (error) {
-        console.error("Error occurred while generating metadata:", error);
-        // Handle the error accordingly
-      } finally {
-        isGeneratingMetadata = false; // Set the flag back to false after generateMetadataAndProcess finishes
-      }
-    } else {
-      console.log("Waiting for handleEvent to finish before generating metadata...");
-    }
-  };
+  //       await publishToIpns(ipfs, ipfs_cid, nodeIpnsKey, 30*1000);
+  //     } catch (error) {
+  //       console.error("Error occurred while generating metadata:", error);
+  //       // Handle the error accordingly
+  //     } finally {
+  //       isGeneratingMetadata = false; // Set the flag back to false after generateMetadataAndProcess finishes
+  //     }
+  //   } else {
+  //     console.log("Waiting for handleEvent to finish before generating metadata...");
+  //   }
+  // };
   
-  // Execute the function immediately and then every 6 minutes
-  generateMetadataAndProcess();
-  setInterval(() => {
-    if (!isGeneratingMetadata) { // Check if generateMetadataAndProcess is not running
-      generateMetadataAndProcess();
-    } else {
-      console.log("Waiting for generateMetadataAndProcess to finish before triggering again...");
-    }
-  }, 6 * 60 * 1000);
+  // // Execute the function immediately and then every 6 minutes
+  // generateMetadataAndProcess();
+  // setInterval(() => {
+  //   if (!isGeneratingMetadata) { // Check if generateMetadataAndProcess is not running
+  //     generateMetadataAndProcess();
+  //   } else {
+  //     console.log("Waiting for generateMetadataAndProcess to finish before triggering again...");
+  //   }
+  // }, 6 * 60 * 1000);
 }
 
 node_fsm();

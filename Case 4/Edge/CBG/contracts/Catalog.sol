@@ -37,6 +37,7 @@ contract FarmMenu {
     string public farmId;
     string public outputIpnsPk; //public key for output to be sold
     string public ready;
+    string public gtwScAddr;
 
     event IpnsUpdated(string outputIpnsPk);
     event DataDeviceRequested(string deviceId);
@@ -46,8 +47,13 @@ contract FarmMenu {
         farmId = _farmId;
         outputIpnsPk = _output_ipns_pk;
         ready = "0";
+        gtwScAddr = "0";
     }
     
+    function setGtwScAddr(string memory _gtw_sc_addr) public {
+        gtwScAddr = _gtw_sc_addr;
+    }
+
     function setReadyFlag(string memory _ready) public {
         ready = _ready;
     }

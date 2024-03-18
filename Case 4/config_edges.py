@@ -51,6 +51,7 @@ def append_nodes(original_content, num_nodes, node_addr):
     build:
       context: ./Ethereum/{new_service_name}
       dockerfile: Dockerfile
+      timeout: 3600  # Set timeout to 1h (in seconds)
     tty: true
     depends_on:
       - bootnode
@@ -71,9 +72,9 @@ def append_nodes(original_content, num_nodes, node_addr):
       --unlock 0x{node_addr[i-1]}
       --password /app/password.txt
       --allow-insecure-unlock console
-    ports:
-      - "{node_port}:{node_port}"
-      - "{http_port}:{http_port}"
+    # ports:
+    #   - "{node_port}:{node_port}"
+    #   - "{http_port}:{http_port}"
     network_mode: host
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
@@ -89,9 +90,28 @@ def append_nodes(original_content, num_nodes, node_addr):
       - node0
       - {new_service_name}
     build: 
-      "./Edge/Device_Node"
+      context: "./Edge/Device_Node"
+      timeout: 3600  # Set timeout to 1h (in seconds)
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+
+#   requester_{new_service_name}:
+#     image: requester_{new_service_name}
+#     environment:
+#       - CONTAINER_NAME=requester_{new_service_name}
+#     container_name: requester_{new_service_name}
+#     tty: true
+#     depends_on:
+#       - bootnode
+#       - node0
+#       - edge_polygon_node0
+#     build: 
+#       context: "./Requester/"
+#       timeout: 3600  # Set timeout to 1h (in seconds)
+#     volumes:
+#       - ~/Documents/EdgeEmulator/Case\ 4/Requester/:/app/Results
+#     extra_hosts:
+#       - "host.docker.internal:172.17.0.1"
 '''
 
     appended_content += "\n################################################################\n"

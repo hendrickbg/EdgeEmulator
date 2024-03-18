@@ -8,7 +8,7 @@ contract Catalog {
     string public catalogIpnsKey; //ipns public key
     string public farmMenuListIpnsKey; //list of available farms
     string public farmMenuListSecretKey; //secret key CID to store data on farmMenuListIpnsKey
-
+    
     event FarmCreated(address farmScAddr);
 
     //deploy a new farm
@@ -36,6 +36,8 @@ contract Catalog {
 contract FarmMenu {
     string public farmId;
     string public outputIpnsPk; //public key for output to be sold
+    string public ready;
+    string public gtwScAddr;
 
     event IpnsUpdated(string outputIpnsPk);
     event DataDeviceRequested(string deviceId);
@@ -44,8 +46,17 @@ contract FarmMenu {
     constructor(string memory _farmId, string memory _output_ipns_pk) {
         farmId = _farmId;
         outputIpnsPk = _output_ipns_pk;
+        ready = "0";
+        gtwScAddr = "0";
     }
     
+    function setGtwScAddr(string memory _gtw_sc_addr) public {
+        gtwScAddr = _gtw_sc_addr;
+    }
+
+    function setReadyFlag(string memory _ready) public {
+        ready = _ready;
+    }
 
     function updateIpnsPk(string memory _output_ipns_pk) public {
         outputIpnsPk = _output_ipns_pk;

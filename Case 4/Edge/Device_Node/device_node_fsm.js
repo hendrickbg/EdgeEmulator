@@ -16,6 +16,7 @@ const CATALOG_CONTRACT_ADDRESS = process.env.CATALOG_CONTRACT_ADDRESS;
 
 const catalogContractJson = require("./artifacts/contracts/Catalog.sol/Catalog.json");
 const farmMenuContractAbi = require("./artifacts/contracts/Catalog.sol/FarmMenu.json");
+const { log } = require('console');
 
 const abi = catalogContractJson.abi;
 
@@ -42,7 +43,8 @@ const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8');
-const privContractAbi = [{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+const privContractAbi = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getCatalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPrivateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
 const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
@@ -113,8 +115,21 @@ async function deployContract() {
   }
 }
 
+async function getGtwScAddress() {
+  
+  while(true) {
+    const addr = await farmMenuContract.gtwScAddr(); 
+    if(addr) {
+      return addr;
+    } else {
+      console.log("Waiting for Gtw SC being deployed...");
+      await publishToIpns(ipfs, ipfs_cid, farmIpnsKey, 1000);
+    }
+  }
+}
+
 async function generateGtwCatalogInstance() {
-  gtwContractAddress = await getLastScAddress();
+  gtwContractAddress = await getGtwScAddress();
   console.log("Gtw Sc Addr: ", gtwContractAddress);
   
   gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
@@ -258,7 +273,7 @@ async function catIpfs(ipfs, cid) {
       if(errorFlag == false) {
         console.log("Fetching content from CID: ", cid);
       
-        data = ipfs.cat(cid, { timeout: 30*1000});
+        data = ipfs.cat(cid, { timeout: 15*1000});
         metadata_chunks = []
         for await (const chunk of data) {
             metadata_chunks.push(chunk)
@@ -270,8 +285,13 @@ async function catIpfs(ipfs, cid) {
       } else {
         console.log("Trying to fetch IPFS data from gateway...");
 
-        contentString = await catIpfsGateway(cid);
-
+        //ipfsCid.replace('/ipfs/', ''
+        if(cid.includes("/ipfs/")) {
+          contentString = await catIpfsGateway(cid.replace('/ipfs/', ''));
+        } else {
+          contentString = await catIpfsGateway(cid);
+        }
+        
         if(contentString == "") {
           errorFlag = false;
           console.log("Error trying to fetch IPFS data again...");
@@ -627,15 +647,21 @@ async function importKey(keyName, keyFile) {
 }
 
 async function importFarmMenuIpnsKeyName(ipfs) {
-  const secretKeyCid = await catalogContract.farmMenuListSecretKey(); 
 
-  console.log("Secret key CID: ", secretKeyCid);
+  let secretKeyCid = "";
 
-  // const data = ipfs.cat(secretKeyCid);
-  // const metadata_chunks = []
-  // for await (const chunk of data) {
-  //     metadata_chunks.push(chunk)
-  // }
+  while(true) {
+    secretKeyCid = await catalogContract.farmMenuListSecretKey(); 
+
+    //check if is not empty
+    if(secretKeyCid.trim().length > 1) {
+      console.log("Secret key CID: ", secretKeyCid);
+      break;
+    } else {
+      console.log("Error reading FarmMenuList from Public Catalog. Trying again...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
   
   // const exportedKey = Buffer.concat(metadata_chunks).toString()
   const exportedKey = await catIpfs(ipfs, secretKeyCid);
@@ -934,11 +960,23 @@ async function getFarmMenuAddr(ipfs) {
 
     while(farmMenuAddr == "") {
 
-      for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
+      while(true) {
+        for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
           cid = name;
+        }
+
+        if(cid) {
+          console.log("CID Resolved From FarmMenuList: ", cid);
+          break;
+        } else {
+          console.log("Error resolving FarmMenuList...");
+          console/log("Trying to import Farm Menu List Private Key...");
+          await importFarmMenuIpnsKeyName(ipfs);
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-      
-      console.log("CID Resolved From FarmMenuList: ", cid);
+
       console.log("CID: ", cid.replace('/ipfs/', ''));
       var contentString = "";
 
@@ -985,8 +1023,6 @@ async function node_fsm() {
   let isGeneratingMetadata = false; // Flag to indicate if generateMetadataAndProcess is running
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10 seconds
-  
-  await generateGtwCatalogInstance();
 
   await waitForCatalogReady(ipfs)
 
@@ -998,7 +1034,8 @@ async function node_fsm() {
   await waitForNetworkReady(ipfs);
   
   console.log("\nNetwork configured!\n");
-
+  
+  await generateGtwCatalogInstance();
   await checkPrivateCatalog(ipfs);
 
   const generateMetadataAndProcess = async () => {

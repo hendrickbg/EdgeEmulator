@@ -32,7 +32,7 @@ var cnt = 0;
 const fileName = 'ipfs_file.txt';
 
 var nodeIpnsKey = "";
-const FARM_ID = "0";
+let FARM_ID = "";
 var farmOutputIpnsPk = "";
 let farmSc = "";
 let farmMenuContract;
@@ -160,6 +160,7 @@ async function importOutputIpnsKeyName(ipfs) {
   console.log("Importing Output IPNS key...");
 
   const outputIpnsPrivateKey = await gtwCatalogContract.methods.outputIpnsPrivateKey().call(); 
+  console.log("Ouput IPNS CID: ", outputIpnsPrivateKey);
 
   const exportedKey = await catIpfs(ipfs, outputIpnsPrivateKey);
   console.log("IPFS output: ", exportedKey);
@@ -853,12 +854,21 @@ async function checkPublicCatalog(ipfs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+async function getFarmId() {
+  const farmIdStr = process.env.FARM_ID;
+  const parts = farmIdStr.split('farm_');
+  
+  const nodeNumber = parseInt(parts[1]);
+  const farmId = isNaN(nodeNumber) ? 'unknown' : nodeNumber.toString();
+  console.log("FARM ID Detected: ", farmId);
+  return farmId;
+}
+
 async function getContainerName() {
   const containerName = process.env.CONTAINER_NAME;
   console.log("Container name: ", containerName);
 
   const parts = containerName.split('node');
-  console.log("Parts: ", parts);
   const nodeNumber = parseInt(parts[1]);
   const deviceID = isNaN(nodeNumber) ? 'unknown' : nodeNumber.toString();
   console.log("Device ID: ", deviceID);
@@ -942,6 +952,7 @@ async function getFarmMenuAddr(ipfs) {
 
     let farmMenuAddr = "";
     let result = "";
+    let import_flag = false;
 
     while(true) {
       result = await catalogContract.farmMenuListIpnsKey();
@@ -957,12 +968,17 @@ async function getFarmMenuAddr(ipfs) {
 
 
     let cid;
+    // let resolved = false;
 
     while(farmMenuAddr == "") {
 
+      
       while(true) {
+
+        console.log("Resolving again with IPNS KEY: ", result);
         for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
           cid = name;
+          console.log("CID RESOLVED DEBUG: ", cid);
         }
 
         if(cid) {
@@ -970,14 +986,21 @@ async function getFarmMenuAddr(ipfs) {
           break;
         } else {
           console.log("Error resolving FarmMenuList...");
-          console/log("Trying to import Farm Menu List Private Key...");
-          await importFarmMenuIpnsKeyName(ipfs);
+          
+          if(!import_flag) {
+            console.log("Trying to import Farm Menu List Private Key...");
+            import_flag = true;
+            await importFarmMenuIpnsKeyName(ipfs);
+          
+          } else {
+            console.log("Trying to resolve again...");
+          }
 
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
 
-      console.log("CID: ", cid.replace('/ipfs/', ''));
+      console.log("Currently CID: ", cid.replace('/ipfs/', ''));
       var contentString = "";
 
       while(contentString != "-1;-1;-1;-1;-1;-1") {
@@ -1024,6 +1047,7 @@ async function node_fsm() {
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10 seconds
 
+  FARM_ID = await getFarmId();
   await waitForCatalogReady(ipfs)
 
   //get the farm menu addr

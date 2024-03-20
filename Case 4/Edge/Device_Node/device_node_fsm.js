@@ -1062,12 +1062,18 @@ async function node_fsm() {
   await generateGtwCatalogInstance();
   await checkPrivateCatalog(ipfs);
 
+  let n = 0;
+  let totalElapsedTime = 0;
+
   const generateMetadataAndProcess = async () => {
     if (!isHandlingEvent && !isGeneratingMetadata) { // Check if handleEvent and generateMetadataAndProcess are not running
       isGeneratingMetadata = true; // Set the flag to true while generateMetadataAndProcess is running
 
       try {
         console.log("\n\nReading new sensor data...");
+
+        const startTime = process.hrtime();
+
         const metadata = await getSensorData();
         const deviceIDList = metadata.split(';');
         const deviceID = deviceIDList[0];
@@ -1088,6 +1094,24 @@ async function node_fsm() {
         await ipfsAddLocal(ipfs, data); //replicate to accelerate the ipns publish
       
         await publishToIpns(ipfs, ipfs_cid, nodeIpnsKey, 30*1000);
+
+        const endTime = process.hrtime(startTime);
+        console.log("EndTime: ", endTime);
+        const elapsedTime = (endTime[0]*1000+endTime[1]/1000000)/1000;
+        console.log("ElapsedTime: ", elapsedTime);
+
+        totalElapsedTime += elapsedTime;
+        n += 1;
+
+        const average = (totalElapsedTime/n);
+        console.log("Average: ", average);
+
+        const csvData = `${n};${elapsedTime};${average}\n`;
+        fs.appendFile("./app/Results/tx_results.txt", csvData, (err) => {
+        if (err) throw err;
+          console.log('Data appended to the CSV file.');
+        });
+
       } catch (error) {
         console.error("Error occurred while generating metadata:", error);
         // Handle the error accordingly

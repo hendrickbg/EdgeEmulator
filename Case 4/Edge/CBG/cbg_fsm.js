@@ -746,13 +746,16 @@ async function checkFarmIpnsKey(ipfs, farmMenuListIpnsKey) {
 
   //verifica se a farm já possui um IPNS key para ela
   while(contentString != "-1;-1;-1;-1;-1;-1") {
-    const data = ipfs.cat(cid);
-    const metadata_chunks = []
-    for await (const chunk of data) {
-        metadata_chunks.push(chunk)
-    }
-    contentString = Buffer.concat(metadata_chunks).toString()
-    console.log("IPFS output: ", contentString);
+    // const data = ipfs.cat(cid);
+    // const metadata_chunks = []
+    // for await (const chunk of data) {
+    //     metadata_chunks.push(chunk)
+    // }
+    // contentString = Buffer.concat(metadata_chunks).toString()
+      // console.log("IPFS output: ", contentString);
+
+    console.log("Trying to fetch IPFS content...");
+    contentString = await catIpfs(ipfs, cid);
 
     const ipfsContentList = contentString.split(';');
 
@@ -835,55 +838,67 @@ async function checkPublicCatalog(ipfs) {
   var farmMenuListIpnsKey = await catalogContract.farmMenuListIpnsKey(); //verifica se a lista de farms nao existe
   console.log("FarmMenuListIpnsKey: ", farmMenuListIpnsKey); 
 
+  let ipns_configured = false;
+
   if(FARM_ID == "0") {
-    try {
-      if(farmMenuListIpnsKey == '') { //se nao existe
-        
-        const catalogKeyName = 'PublicFarmMenuList'; //ipns key name para onde a lista de farms será armazenada
 
-        var key = "";
-        const keyExists = await checkIPNSKeyNameExists(ipfs, catalogKeyName);
-
-        if(keyExists == false) {
-          console.log("Generating a new IPNS public key for CSC...");
-          key = await ipfs.key.gen(catalogKeyName, { type: 'rsa', size: 2048 }); //gera a chave
-        } else{
-          console.log("IPNS Key Already Exist!");
-          const keys = await ipfs.key.list();
-          key = await keys.find((k) => k.name === catalogKeyName); //procura a chave, caso ela exista
+    while(true) {
+      try {
+        if(farmMenuListIpnsKey == '') { //se nao existe
+          
+            if(!ipns_configured) {
+            const catalogKeyName = 'PublicFarmMenuList'; //ipns key name para onde a lista de farms será armazenada
+    
+            var key = "";
+            const keyExists = await checkIPNSKeyNameExists(ipfs, catalogKeyName);
+    
+            if(keyExists == false) {
+              console.log("Generating a new IPNS public key for CSC...");
+              key = await ipfs.key.gen(catalogKeyName, { type: 'rsa', size: 2048 }); //gera a chave
+            } else{
+              console.log("IPNS Key Already Exist!");
+              const keys = await ipfs.key.list();
+              key = await keys.find((k) => k.name === catalogKeyName); //procura a chave, caso ela exista
+            }
+          
+            var ipfs_cid = await addIpfsFile("-1;-1;-1;-1;-1;-1");
+            await ipfsAddLocal(ipfs, "-1;-1;-1;-1;-1;-1"); //replicate to accelerate the ipns publish
+          
+            //populate this IPNS key with a first value
+            await publishToIpns(ipfs, ipfs_cid, catalogKeyName, 1000*30); //15s of timeout
+    
+            farmMenuListIpnsKey = key.id;
+    
+            console.log(`Sending key ${catalogKeyName} key to Catalog SC: ${key.id}`);
+            var tx = await catalogContract.setFarmMenuListIpnsKey(key.id); //manda a chave gerada para o SC
+            await tx.wait();
+            console.log("Transaction done!");
+            
+            await exportKey(catalogKeyName);
+            const tmpPath = 'exportedKey.key';
+            const exportedKey = await readFileAndDecode(tmpPath);
+    
+            ipfs_cid = await addIpfsFile(exportedKey);
+            await ipfsAddLocal(ipfs, exportedKey); //replicate to accelerate the ipns publish
+            ipns_configured = true;
+          
+          }
+          
+          tx = await catalogContract.setFarmMenuListSecretKey(ipfs_cid); //armazena chave privada no SC
+          await tx.wait();
+          console.log("Transaction done!");
+          
+        } else {
+          console.log("Catalog Key Name already exist!");      
+          break;
         }
-      
-        var ipfs_cid = await addIpfsFile("-1;-1;-1;-1;-1;-1");
-        await ipfsAddLocal(ipfs, "-1;-1;-1;-1;-1;-1"); //replicate to accelerate the ipns publish
-      
-        //populate this IPNS key with a first value
-        await publishToIpns(ipfs, ipfs_cid, catalogKeyName, 1000*30); //15s of timeout
-
-        farmMenuListIpnsKey = key.id;
-
-        console.log(`Sending key ${catalogKeyName} key to Catalog SC: ${key.id}`);
-        var tx = await catalogContract.setFarmMenuListIpnsKey(key.id); //manda a chave gerada para o SC
-        await tx.wait();
-        console.log("Transaction done!");
-        
-        await exportKey(catalogKeyName);
-        const tmpPath = 'exportedKey.key';
-        const exportedKey = await readFileAndDecode(tmpPath);
-
-        ipfs_cid = await addIpfsFile(exportedKey);
-        await ipfsAddLocal(ipfs, exportedKey); //replicate to accelerate the ipns publish
-
-        tx = await catalogContract.setFarmMenuListSecretKey(ipfs_cid); //armazena chave privada no SC
-        await tx.wait();
-        console.log("Transaction done!");
-        
-      } else {
-        console.log("Catalog Key Name already exist!");      
+  
+      } catch(error) {
+        console.log("Error trying to send IPFS CID to Public Catalog! Trying again: ", error);
       }
-
-    } catch(error) {
-      console.log("Error catched: ", error);
     }
+
+    
   
   } else {
     farmMenuListIpnsKey = await waitForCatalogReady(ipfs);
@@ -940,7 +955,8 @@ async function checkPublicCatalog(ipfs) {
       const decimal_farm_id = parseInt(FARM_ID, 10);
       console.log("decimal_farm_id: ", decimal_farm_id);
       
-      if((decimal_farm_id > decimal_farm_id_tmp) && (decimal_farm_id_tmp > 0)) {
+      //try to find the previous one! shall be always farm_id-1
+      if((((decimal_farm_id_tmp == (decimal_farm_id-1)) && (decimal_farm_id_tmp >= 0)) || (decimal_farm_id == 0))) {
         console.log("Previous Farm found!");
         break;
       } else {

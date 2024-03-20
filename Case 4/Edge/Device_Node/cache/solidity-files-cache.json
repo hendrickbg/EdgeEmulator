@@ -1,8 +1,8 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/home/hendrick/Documents/Debug/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Catalog.sol": {
-      "lastModificationDate": 1710354937126,
+    "/home/student/Documents/hendrick/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Catalog.sol": {
+      "lastModificationDate": 1710539926506,
       "contentHash": "27660b05e282dae2279044bb1d7e0e3a",
       "sourceName": "contracts/Catalog.sol",
       "solcConfig": {
@@ -37,9 +37,9 @@
         "FarmMenu"
       ]
     },
-    "/home/hendrick/Documents/Debug/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Gateway_Catalog.sol": {
-      "lastModificationDate": 1710346503802,
-      "contentHash": "45f577dbaac5b3b610a90a548688aaf2",
+    "/home/student/Documents/hendrick/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Gateway_Catalog.sol": {
+      "lastModificationDate": 1710592792660,
+      "contentHash": "52a576b3ecabc2efa93622ec698b412e",
       "sourceName": "contracts/Gateway_Catalog.sol",
       "solcConfig": {
         "version": "0.8.9",
@@ -72,8 +72,114 @@
         "GatewayCatalog"
       ]
     },
-    "/home/hendrick/Documents/Debug/EdgeEmulator/Case 4/Edge/Device_Node/contracts/HelloWorld.sol": {
-      "lastModificationDate": 1710180934050,
+    "/home/student/Documents/hendrick/EdgeEmulator/Case 4/Edge/Device_Node/contracts/HelloWorld.sol": {
+      "lastModificationDate": 1710539926506,
+      "contentHash": "9844a5c690978530d28735fa9e373fd9",
+      "sourceName": "contracts/HelloWorld.sol",
+      "solcConfig": {
+        "version": "0.8.9",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.9"
+      ],
+      "artifacts": [
+        "HelloWorld"
+      ]
+    },
+    "/home/student/Documents/hendrick/Bkp/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Catalog.sol": {
+      "lastModificationDate": 1710778898960,
+      "contentHash": "6290af836ad31c6ea847b3accbf5ca5a",
+      "sourceName": "contracts/Catalog.sol",
+      "solcConfig": {
+        "version": "0.8.9",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.9"
+      ],
+      "artifacts": [
+        "Catalog",
+        "FarmMenu"
+      ]
+    },
+    "/home/student/Documents/hendrick/Bkp/EdgeEmulator/Case 4/Edge/Device_Node/contracts/Gateway_Catalog.sol": {
+      "lastModificationDate": 1710773560172,
+      "contentHash": "37972c0146e62075804ae33bf0f0fe98",
+      "sourceName": "contracts/Gateway_Catalog.sol",
+      "solcConfig": {
+        "version": "0.8.9",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.9"
+      ],
+      "artifacts": [
+        "GatewayCatalog"
+      ]
+    },
+    "/home/student/Documents/hendrick/Bkp/EdgeEmulator/Case 4/Edge/Device_Node/contracts/HelloWorld.sol": {
+      "lastModificationDate": 1710613160079,
       "contentHash": "9844a5c690978530d28735fa9e373fd9",
       "sourceName": "contracts/HelloWorld.sol",
       "solcConfig": {

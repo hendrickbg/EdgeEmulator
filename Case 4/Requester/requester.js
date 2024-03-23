@@ -52,68 +52,71 @@ async function getContainerName() {
     console.log("Container name: ", containerName);
   
     const parts = containerName.split('node');
-    console.log("Parts: ", parts);
     const nodeNumber = parseInt(parts[1]);
     const farmId = isNaN(nodeNumber) ? 'unknown' : nodeNumber.toString();
-    console.log("Device ID: ", farmId);
+    console.log("Farm ID: ", farmId);
     return farmId;
 }
 
 async function catIpfsGateway(cid) {
-    try {
-      const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
-      //console.log(response.data);
-      return response.data;
-    } catch (error) {
-       //console.log("Error: ", error);
-      return "";
-    }
+  try {
+    const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
+    //console.log(response.data);
+    return response.data;
+  } catch (error) {
+    return "";
+  }
 }
-  
+
 async function catIpfs(ipfs, cid) {
-    var data = '';
-    var metadata_chunks;
-    var contentString = '';
-    
-    var errorFlag = false;
+  var data = '';
+  var metadata_chunks;
+  var contentString = '';
   
-    while(true) {
-      try { 
-  
-        if(errorFlag == false) {
-          console.log("Fetching content from CID: ", cid);
-        
-          data = ipfs.cat(cid, { timeout: 30*1000});
-          metadata_chunks = []
-          for await (const chunk of data) {
-              metadata_chunks.push(chunk)
-          }
-          contentString = Buffer.concat(metadata_chunks).toString();
-  
-          return contentString;
-  
+  var errorFlag = false;
+
+  while(true) {
+    try { 
+
+      if(errorFlag == false) {
+        console.log("Fetching content from CID: ", cid);
+      
+        data = ipfs.cat(cid, { timeout: 15*1000});
+        metadata_chunks = []
+        for await (const chunk of data) {
+            metadata_chunks.push(chunk)
+        }
+        contentString = Buffer.concat(metadata_chunks).toString();
+
+        return contentString;
+
+      } else {
+        console.log("Trying to fetch IPFS data from gateway...");
+
+        //ipfsCid.replace('/ipfs/', ''
+        if(cid.includes("/ipfs/")) {
+          contentString = await catIpfsGateway(cid.replace('/ipfs/', ''));
         } else {
-          console.log("Trying to fetch IPFS data from gateway...");
-  
           contentString = await catIpfsGateway(cid);
-  
-          if(contentString == "") {
-            errorFlag = false;
-            console.log("Error trying to fetch IPFS data again...");
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-  
-          } else {
-            return contentString;
-          }
         }
         
-      } catch(error) {
-        //console.log("Error: ",  error);
-        console.log("Error trying to fetch IPFS data again...");
-        errorFlag = true;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if(contentString == "") {
+          errorFlag = false;
+          console.log("Error trying to fetch IPFS data again...");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        } else {
+          return contentString;
+        }
       }
+      
+    } catch(error) {
+      //console.log("Error: ",  error);
+      console.log("Error trying to fetch IPFS data again...");
+      errorFlag = true;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+  }
 }
   
 async function getRandomFarm(farmList) {
@@ -275,7 +278,7 @@ async function main() {
     }
 
     //select the farm which it will interate with randomly
-    const farmID = await getRandomFarm(farmList);
+    const farmID = await getContainerName();
     console.log("FarmID: ", farmID);
     farmSc = farmDictionary[farmID];
 
@@ -378,6 +381,13 @@ async function main() {
                 console.log("Total elapse time: ", totalElapsedTime);
                 console.log(`[${n}]: Worst Time: ${worstTime} --- Best Time: ${bestTime}`);
                 console.log(`[${n}]: Avarange time: ${average}\n\n`);
+                
+                // Ensure the directory exists, create it if it doesn't
+                const outputPath = "/Results";
+                fs.mkdirSync(outputPath, { recursive: true }); 
+
+                // File path
+                const filePath = path.join(outputPath, `farm${FARM_ID}_request_node${deviceID}.txt`);
 
                 const csvData = `${n};${elapsedTimeSeconds};${average}\n`;
                 fs.appendFile("/app/Results/request_results.txt", csvData, (err) => {

@@ -36,18 +36,23 @@ let farmMenuContract;
 
 ////////////////////////////////////////PRIVATE ETHEREUM CODE/////////////////////////////////////////////////////
 
-const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
-
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8')
 const privContractAbi = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getCatalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPrivateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
-const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
-let gtwCatalogContract;
+// const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
+// const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 
+let privateProvider;
+let contractInterface;
+
+let gtwCatalogContract;
 let gtwContractAddress = "";
 
-const web3 = new Web3('http://172.16.5.1:8545');
+async function getHttpPort() {
+  const httoPortStr = process.env.HTTP_PORT;
+  return httoPortStr;
+}
 
 async function getFarmId() {
   const farmIdStr = process.env.FARM_ID;
@@ -834,6 +839,12 @@ async function waitForCatalogReady(ipfs) {
   return farmMenuIpnsKey;
 }
 
+async function initPrivateContractInterface() {
+  const httpPort = await getHttpPort();
+  privateProvider = new ethers.providers.JsonRpcProvider(`http://172.16.5.1:${httpPort}`);
+  contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
+}
+
 async function checkPublicCatalog(ipfs) {
   var farmMenuListIpnsKey = await catalogContract.farmMenuListIpnsKey(); //verifica se a lista de farms nao existe
   console.log("FarmMenuListIpnsKey: ", farmMenuListIpnsKey); 
@@ -1071,6 +1082,7 @@ async function node_fsm() {
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10 seconds
 
+  await initPrivateContractInterface();
   FARM_ID = await getFarmId();
   await checkPublicCatalog(ipfs);
   await checkPrivateCatalog(ipfs);

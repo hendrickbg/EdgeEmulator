@@ -39,18 +39,19 @@ let farmMenuContract;
 
 ////////////////////////////////////////PRIVATE ETHEREUM CODE/////////////////////////////////////////////////////
 
-const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
+// const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8');
 const privContractAbi = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getCatalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPrivateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
-const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
+// const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
 let gtwContractAddress;
 
-const web3 = new Web3('http://172.16.5.1:8545');
+// const web3 = new Web3('http://172.16.5.1:8545');
+let web3;
 
 // Function to scan recent blocks for contract creation transactions
 async function getLastScAddress() {
@@ -101,20 +102,6 @@ async function waitForNetworkReady(ipfs) {
   }
 }
 
-async function deployContract() {
-  try {
-      // Deploy the contract
-      gtwCatalogContract = await contractInterface.deploy();
-      
-      // Contract deployed successfully, you can access its address and other details
-      console.log('Contract deployed at address:', gtwCatalogContract.address);
-      return gtwCatalogContract.address;
-  } catch (error) {
-      console.error('Error deploying contract:', error);
-      return null;
-  }
-}
-
 async function getGtwScAddress() {
   
   while(true) {
@@ -128,10 +115,18 @@ async function getGtwScAddress() {
   }
 }
 
+async function getHttpPort() {
+  const httoPortStr = process.env.HTTP_PORT;
+  return httoPortStr;
+}
+
 async function generateGtwCatalogInstance() {
   gtwContractAddress = await getGtwScAddress();
   console.log("Gtw Sc Addr: ", gtwContractAddress);
   
+  const httpPort = await getHttpPort();
+  console.log("HTTP Port: ", httpPort);
+  web3 = new Web3(`http://172.16.5.1:${httpPort}`);
   gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
 }
 
@@ -996,7 +991,7 @@ async function getFarmMenuAddr(ipfs) {
             console.log("Trying to resolve again...");
           }
 
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
@@ -1025,7 +1020,7 @@ async function getFarmMenuAddr(ipfs) {
 
       farmMenuAddr = "";
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 }
 
@@ -1106,8 +1101,15 @@ async function node_fsm() {
         const average = (totalElapsedTime/n);
         console.log("Average: ", average);
 
+        // Ensure the directory exists, create it if it doesn't
+        const outputPath = "/Results";
+        fs.mkdirSync(outputPath, { recursive: true }); 
+
+        // File path
+        const filePath = path.join(outputPath, `farm${FARM_ID}_device_node${deviceID}.txt`);
+
         const csvData = `${n};${elapsedTime};${average}\n`;
-        fs.appendFile("./app/Results/tx_results.txt", csvData, (err) => {
+        fs.appendFile(filePath, csvData, (err) => {
         if (err) throw err;
           console.log('Data appended to the CSV file.');
         });

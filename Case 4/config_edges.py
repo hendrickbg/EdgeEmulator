@@ -117,7 +117,7 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     build: 
       "./Requester/"
     volumes:
-      - results_volume:/Results
+      - requester_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 '''
@@ -184,7 +184,7 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
       "./Edge/Device_Node"
     mem_limit: 1gb
     volumes:
-      - results_volume:/Results
+      - device_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 '''

@@ -1,5 +1,6 @@
 const axios = require('axios')
 const fs = require('fs');
+const path = require('path'); // Add the path module
 const { ethers } = require('ethers');
 const { exec } = require('child_process');
 
@@ -56,67 +57,6 @@ async function getContainerName() {
     const farmId = isNaN(nodeNumber) ? 'unknown' : nodeNumber.toString();
     console.log("Farm ID: ", farmId);
     return farmId;
-}
-
-async function catIpfsGateway(cid) {
-  try {
-    const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
-    //console.log(response.data);
-    return response.data;
-  } catch (error) {
-    return "";
-  }
-}
-
-async function catIpfs(ipfs, cid) {
-  var data = '';
-  var metadata_chunks;
-  var contentString = '';
-  
-  var errorFlag = false;
-
-  while(true) {
-    try { 
-
-      if(errorFlag == false) {
-        console.log("Fetching content from CID: ", cid);
-      
-        data = ipfs.cat(cid, { timeout: 15*1000});
-        metadata_chunks = []
-        for await (const chunk of data) {
-            metadata_chunks.push(chunk)
-        }
-        contentString = Buffer.concat(metadata_chunks).toString();
-
-        return contentString;
-
-      } else {
-        console.log("Trying to fetch IPFS data from gateway...");
-
-        //ipfsCid.replace('/ipfs/', ''
-        if(cid.includes("/ipfs/")) {
-          contentString = await catIpfsGateway(cid.replace('/ipfs/', ''));
-        } else {
-          contentString = await catIpfsGateway(cid);
-        }
-        
-        if(contentString == "") {
-          errorFlag = false;
-          console.log("Error trying to fetch IPFS data again...");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        } else {
-          return contentString;
-        }
-      }
-      
-    } catch(error) {
-      //console.log("Error: ",  error);
-      console.log("Error trying to fetch IPFS data again...");
-      errorFlag = true;
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
 }
   
 async function getRandomFarm(farmList) {
@@ -214,15 +154,145 @@ async function importFarmMenuIpnsKeyName(ipfs) {
     return clone;
 }
 
+async function catIpfsGateway(cid) {
+  try {
+    const response = await axios.get(`https://ipfs.io/ipfs/${cid}`);
+    //console.log(response.data);
+    return response.data;
+  } catch (error) {
+    return "";
+  }
+}
+
+async function catIpfs(ipfs, cid) {
+  var data = '';
+  var metadata_chunks;
+  var contentString = '';
+  
+  var errorFlag = false;
+
+  while(true) {
+    try { 
+
+      if(errorFlag == false) {
+        console.log("Fetching content from CID: ", cid);
+      
+        data = ipfs.cat(cid, { timeout: 15*1000});
+        metadata_chunks = []
+        for await (const chunk of data) {
+            metadata_chunks.push(chunk)
+        }
+        contentString = Buffer.concat(metadata_chunks).toString();
+
+        return contentString;
+
+      } else {
+        console.log("Trying to fetch IPFS data from gateway...");
+
+        //ipfsCid.replace('/ipfs/', ''
+        if(cid.includes("/ipfs/")) {
+          contentString = await catIpfsGateway(cid.replace('/ipfs/', ''));
+        } else {
+          contentString = await catIpfsGateway(cid);
+        }
+        
+        if(contentString == "") {
+          errorFlag = false;
+          console.log("Error trying to fetch IPFS data again...");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        } else {
+          return contentString;
+        }
+      }
+      
+    } catch(error) {
+      //console.log("Error: ",  error);
+      console.log("Error trying to fetch IPFS data again...");
+      errorFlag = true;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+}
+
+async function resolveIpnsKeyCLI(ipns_key) {
+  return new Promise((resolve, reject) => {
+    const command = `ipfs name resolve /ipns/${ipns_key}`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error executing command: ${error.message}`);
+        return;
+      }
+
+      if (stderr) {
+        reject(`Command error: ${stderr}`);
+        return;
+      }
+
+      console.log("Output IPNS CLI: ", stdout);
+
+      const resolvedCID = stdout.trim(); // Trim to remove leading/trailing whitespace
+
+      resolve(resolvedCID);
+    });
+  });
+}
+
+async function resolveIpnsKey(ipfs, ipns_key) {
+  let cid;
+  
+  while(true) {
+
+    console.log("Resolving IPNS KEY: ", ipns_key);
+
+    if(ipns_key.includes("/ipns/")) {
+      for await (const name of ipfs.name.resolve(`${ipns_key}`)) {
+        cid = name;
+      }
+    } else {
+      for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
+        cid = name;
+      }
+    }
+
+    if(cid) {
+      console.log("CID Resolved : ", cid);
+      break;
+    } else {
+      console.log(`Error resolving IPNS key: [${cid}]`);
+      console.log("Trying to resolve by CLI...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log("Resolving IPNS with CLI...");
+      cid = await resolveIpnsKeyCLI(ipns_key);
+      console.log("Resolved CID with CLI: ", cid);
+
+      if(cid == "" || !cid) {
+        console.log(`Error resolving IPNS key: [${cid}]`);
+        console.log("Trying again...");
+      } else {
+        console.log("CID Resolved: ", cid);
+        return cid;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  return cid;
+}
+
 async function main() {
     let { create } = await import('ipfs-http-client');
     let ipfs = await create({ url: 'http://127.0.0.1:5001' });
     let farmList = [];
     let farmDictionary = {};
     let cid = "";
+    let result;
 
     //waits 5 minutos to properly initialize the system
-    await new Promise((resolve) => setTimeout(resolve, 1000*60*2));
+    await new Promise((resolve) => setTimeout(resolve, 1000*60*3));
 
     await importFarmMenuIpnsKeyName(ipfs);
 
@@ -232,23 +302,18 @@ async function main() {
         //await new Promise((resolve) => setTimeout(resolve, 1000*60*5));
 
 
-        while(true) {
-            const result = await catalogContract.farmMenuListIpnsKey();
-            console.log("Request result: ", result);
-
-            for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
-                cid = name;
-            }
-            
-            if(cid) {
-                console.log("CID Resolved: ", cid);
-                break;
-            } else {
-                console.log(`Error resolving ${result}, trying again...`);
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
+        while(true){
+          result = await catalogContract.farmMenuListIpnsKey();
+          console.log("Request result: ", result)
+          if(result == "" || !result || result === undefined) {
+            console.log("Trying to read farmMenuListIpnsKey again...");
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          } else {
+            break;
+          }
         }
 
+        cid = await resolveIpnsKey(ipfs, result);
         
         console.log("CID: ", cid.replace('/ipfs/', ''));
         var contentString = "";
@@ -278,13 +343,28 @@ async function main() {
     }
 
     //select the farm which it will interate with randomly
-    const farmID = await getContainerName();
+    // const farmID = await getContainerName();
+    const farmID = 0;
     console.log("FarmID: ", farmID);
     farmSc = farmDictionary[farmID];
 
     console.log("Farm SC: ", farmSc)
     let farmMenuContract = new ethers.Contract(farmSc, farmMenuContractAbi.abi, signer);
-    let outputIpns = await farmMenuContract.outputIpnsPk();
+    let outputIpns;
+
+    while(true) {
+      
+      outputIpns = await farmMenuContract.outputIpnsPk();
+
+      if(!outputIpns || outputIpns == "" || outputIpns == undefined) {
+        console.log("Invalid outputIpns: ", outputIpns);
+        console.log("Trying again...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        console.log("Request outputIpns: ", outputIpns);
+        break;
+      }
+    }
 
     let ipnsName = '/ipns/' + outputIpns;
     let previousCid;
@@ -292,7 +372,7 @@ async function main() {
 
     //initialize all values that will be used to generate the graph results
     let n = 0;
-    let totalElapsedTime = 7840035.508;
+    let totalElapsedTime = 0;
     let bestTime = 10000000000;
     let worstTime = 0;
 
@@ -301,9 +381,11 @@ async function main() {
     while(true) {
         
         try {
-            for await (const name of ipfs.name.resolve(ipnsName)) {
-                previousCid = name;
-            }
+            // for await (const name of ipfs.name.resolve(ipnsName)) {
+            //     previousCid = name;
+            // }
+
+            previousCid = await resolveIpnsKey(ipfs, ipnsName);
     
             outputCid = previousCid;
     
@@ -322,7 +404,7 @@ async function main() {
     
     
                 let timeoutReached = false;
-                const timeoutDuration = 5*60000; // Timeout duration in milliseconds (5*60 seconds)
+                const timeoutDuration = 1*60000; // Timeout duration in milliseconds (5*60 seconds)
 
                 // Start a timeout timer
                 const timeoutTimer = setTimeout(() => {
@@ -362,47 +444,66 @@ async function main() {
     
                 const metadataList = deviceMetadata.split(';');
                 const nextCid = metadataList[1];
-                console.log("Reading from CID: ", nextCid);
-                const deviceLastData = await catIpfs(ipfs, nextCid);
-                console.log("Device last data: ", deviceLastData);
-    
-                const deviceLastDataList = deviceLastData.split(';');
 
-                const elapsedTimeSeconds = elapsedTime/1000;
-                if(elapsedTimeSeconds < bestTime) {
-                    bestTime = elapsedTimeSeconds;
-                }
-    
-                if(elapsedTimeSeconds > worstTime) {
-                    worstTime = elapsedTimeSeconds;
-                }
-    
-                console.log("Elapsed Time: ", elapsedTimeSeconds);
-                console.log("Total elapse time: ", totalElapsedTime);
-                console.log(`[${n}]: Worst Time: ${worstTime} --- Best Time: ${bestTime}`);
-                console.log(`[${n}]: Avarange time: ${average}\n\n`);
-                
-                // Ensure the directory exists, create it if it doesn't
-                const outputPath = "/Results";
-                fs.mkdirSync(outputPath, { recursive: true }); 
+                if(nextCid != "" || nextCid != undefined) {
+                  console.log("Reading from CID: ", nextCid);
+                  const deviceLastData = await catIpfs(ipfs, nextCid);
+                  console.log("Device last data: ", deviceLastData);
+      
+                  const deviceLastDataList = deviceLastData.split(';');
 
-                // File path
-                const filePath = path.join(outputPath, `farm${FARM_ID}_request_node${deviceID}.txt`);
+                  const elapsedTimeSeconds = elapsedTime/1000;
+                  if(elapsedTimeSeconds < bestTime) {
+                      bestTime = elapsedTimeSeconds;
+                  }
+      
+                  if(elapsedTimeSeconds > worstTime) {
+                      worstTime = elapsedTimeSeconds;
+                  }
+      
+                  console.log("Elapsed Time: ", elapsedTimeSeconds);
+                  console.log("Total elapse time: ", totalElapsedTime);
+                  console.log(`[${n}]: Worst Time: ${worstTime} --- Best Time: ${bestTime}`);
+                  console.log(`[${n}]: Avarange time: ${average}\n\n`);
+                  
+                  // Ensure the directory exists, create it if it doesn't
+                  const outputPath = "/Results";
+                  fs.mkdirSync(outputPath, { recursive: true }); 
+                  /// First creates one file per requester node
+                  // File path
+                  const filePath = path.join(outputPath, `farm${FARM_ID}_request_node${FARM_ID}.txt`);
 
-                const csvData = `${n};${elapsedTimeSeconds};${average}\n`;
-                fs.appendFile("/app/Results/request_results.txt", csvData, (err) => {
-                    if (err) throw err;
+                  const csvData = `${n};${elapsedTimeSeconds};${average}\n`;
+                  fs.appendFile(filePath, csvData, (err) => {
+                      if (err) throw err;
+                      console.log('Data appended to the CSV file.');
+                  });
+
+                  //Then appends the result to a single file that will stores all results ever.
+                  // in this file, we are not storing the N value!
+                  const singlFilePath = path.join(outputPath, `farm_requester_nodes_history.txt`);
+
+                  const singleFileCsvData = `${elapsedTime};${average}\n`;
+                  fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
+                  if (err) throw err;
                     console.log('Data appended to the CSV file.');
-                });
-                
-                previousCid = outputCid;
+                  });
+                  
+                  previousCid = outputCid;
 
-                await new Promise((resolve) => setTimeout(resolve, 1000*60*2));
+                  await new Promise((resolve) => setTimeout(resolve, 1000*60*2));
+                
+                } else {
+                 console.log("Received data invalid! Requesting data again...");
+                }
+
+                
             }
     
         } catch(error) {
             console.log("Error: ", error);
             console.log("Running again...");
+            await new Promise((resolve) => setTimeout(resolve, 1000*2));
         }
         
     }

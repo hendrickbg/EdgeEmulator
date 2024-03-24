@@ -1,11 +1,17 @@
 version: '3.7'
 
 volumes:
-  results_volume:
+  device_nodes_volume:
     driver_opts:
       type: none
       o: bind
-      device: /home/student/Documents/hendrick/Results
+      device: /home/student/Documents/hendrick/Results/Device_Nodes
+  
+  requester_nodes_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/student/Documents/hendrick/Results/Requester_Nodes
 
 services:
   bootnode:
@@ -13,6 +19,7 @@ services:
     image: bootnode_container
     container_name: bootnode
     tty: true
+    mem_limit: 1g
     build:
       context: ./Ethereum/Bootnode
     command: bootnode -nodekey /app/bootnode.key -addr host.docker.internal:30300
@@ -67,6 +74,7 @@ services:
       context: ./Ethereum/Farm0/node1
       dockerfile: Dockerfile
     tty: true
+    mem_limit: 1g
     depends_on:
       - bootnode
       - node0
@@ -117,13 +125,14 @@ services:
       - HTTP_PORT=8547
     container_name: device_node1
     tty: true
+    mem_limit: 1g
     depends_on:
       - bootnode
       - node0
     build: 
       context: ./Edge/Device_Node
     volumes:
-      - results_volume:/Results
+      - device_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
@@ -134,6 +143,7 @@ services:
       - FARM_ID=farm_0
     container_name: requester_node0
     tty: true
+    mem_limit: 1g
     depends_on:
       - bootnode
       - node0
@@ -141,9 +151,171 @@ services:
     build: 
       context: ./Requester/
     volumes:
-      - results_volume:/Results
+      - requester_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+
+  requester_node1:
+    image: requester_node1
+    environment:
+      - CONTAINER_NAME=requester_node1
+      - FARM_ID=farm_0
+    container_name: requester_node1
+    tty: true
+    mem_limit: 1g
+    depends_on:
+      - bootnode
+      - edge_polygon_node0
+    build: 
+      context: ./Requester/
+    volumes:
+      - requester_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  requester_node2:
+    image: requester_node2
+    environment:
+      - CONTAINER_NAME=requester_node2
+      - FARM_ID=farm_0
+    container_name: requester_node2
+    tty: true
+    mem_limit: 1g
+    depends_on:
+      - bootnode
+      - edge_polygon_node0
+    build: 
+      context: ./Requester/
+    volumes:
+      - requester_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  requester_node3:
+    image: requester_node3
+    environment:
+      - CONTAINER_NAME=requester_node3
+      - FARM_ID=farm_0
+    container_name: requester_node3
+    tty: true
+    mem_limit: 1g
+    depends_on:
+      - bootnode
+      - edge_polygon_node0
+    build: 
+      context: ./Requester/
+    volumes:
+      - requester_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  requester_node4:
+    image: requester_node4
+    environment:
+      - CONTAINER_NAME=requester_node4
+      - FARM_ID=farm_0
+    container_name: requester_node4
+    tty: true
+    mem_limit: 1g
+    depends_on:
+      - bootnode
+      - edge_polygon_node0
+    build: 
+      context: ./Requester/
+    volumes:
+      - requester_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  # requester_node5:
+  #   image: requester_node5
+  #   environment:
+  #     - CONTAINER_NAME=requester_node5
+  #     - FARM_ID=farm_0
+  #   container_name: requester_node5
+  #   tty: true
+  #   mem_limit: 1g
+  #   depends_on:
+  #     - bootnode
+  #     - edge_polygon_node0
+  #   build: 
+  #     context: ./Requester/
+  #   volumes:
+  #     - requester_nodes_volume:/Results
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
+
+  # requester_node6:
+  #   image: requester_node6
+  #   environment:
+  #     - CONTAINER_NAME=requester_node6
+  #     - FARM_ID=farm_0
+  #   container_name: requester_node6
+  #   tty: true
+  #   mem_limit: 1g
+  #   depends_on:
+  #     - bootnode
+  #     - edge_polygon_node0
+  #   build: 
+  #     context: ./Requester/
+  #   volumes:
+  #     - requester_nodes_volume:/Results
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
+
+  # requester_node7:
+  #   image: requester_node7
+  #   environment:
+  #     - CONTAINER_NAME=requester_node7
+  #     - FARM_ID=farm_0
+  #   container_name: requester_node7
+  #   tty: true
+  #   mem_limit: 1g
+  #   depends_on:
+  #     - bootnode
+  #     - edge_polygon_node0
+  #   build: 
+  #     context: ./Requester/
+  #   volumes:
+  #     - requester_nodes_volume:/Results
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
+
+  # requester_node8:
+  #   image: requester_node8
+  #   environment:
+  #     - CONTAINER_NAME=requester_node8
+  #     - FARM_ID=farm_0
+  #   container_name: requester_node8
+  #   tty: true
+  #   mem_limit: 1g
+  #   depends_on:
+  #     - bootnode
+  #     - edge_polygon_node0
+  #   build: 
+  #     context: ./Requester/
+  #   volumes:
+  #     - requester_nodes_volume:/Results
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
+
+  # requester_node9:
+  #   image: requester_node9
+  #   environment:
+  #     - CONTAINER_NAME=requester_node9
+  #     - FARM_ID=farm_0
+  #   container_name: requester_node9
+  #   tty: true
+  #   mem_limit: 1g
+  #   depends_on:
+  #     - bootnode
+  #     - edge_polygon_node0
+  #   build: 
+  #     context: ./Requester/
+  #   volumes:
+  #     - requester_nodes_volume:/Results
+  #   extra_hosts:
+  #     - "host.docker.internal:172.17.0.1"
 
 
 ################################################################
@@ -172,7 +344,7 @@ services:
       --authrpc.port 8552
       --http.corsdomain=*
       --networkid=1214
-      --unlock 0x44970b1c6d9b93e712a061f669283ed1cdf259df
+      --unlock 0xb15468352c71986345db859ac1672e9c4e5bbddf
       --password /app/password.txt
       --allow-insecure-unlock console
     ports:
@@ -198,7 +370,7 @@ services:
       "./Edge/Device_Node"
     mem_limit: 1gb
     volumes:
-      - results_volume:/Results
+      - device_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
@@ -226,7 +398,7 @@ services:
       --authrpc.port 8557
       --http.corsdomain=*
       --networkid=1214
-      --unlock 0x45bc2ac43fdb7856e94b84ad90441e2d4eeebfab
+      --unlock 0xe61079e0a142c30ecfb72630eb24666873c062bd
       --password /app/password.txt
       --allow-insecure-unlock console
     ports:
@@ -252,7 +424,1465 @@ services:
       "./Edge/Device_Node"
     mem_limit: 1gb
     volumes:
-      - results_volume:/Results
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node4:
+    hostname: node4
+    container_name: node4
+    image: node4
+    build:
+      "./Ethereum/Farm0/node4"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node4
+      --syncmode full
+      --port 30329
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8562
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8563
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x5da3c8fe93ea36f0a0fb95ba2f28e1755b5121e4
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30329:30329"
+      - "8562:8562"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node4:
+    image: device_node4
+    environment:
+      - CONTAINER_NAME=device_node4
+      - FARM_ID=farm_0
+      - HTTP_PORT=8562
+    container_name: device_node4
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node4
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node5:
+    hostname: node5
+    container_name: node5
+    image: node5
+    build:
+      "./Ethereum/Farm0/node5"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node5
+      --syncmode full
+      --port 30334
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8569
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8570
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x9b3725d572ee775f96ea39c8bcf15291c282fba3
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30334:30334"
+      - "8569:8569"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node5:
+    image: device_node5
+    environment:
+      - CONTAINER_NAME=device_node5
+      - FARM_ID=farm_0
+      - HTTP_PORT=8569
+    container_name: device_node5
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node5
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node6:
+    hostname: node6
+    container_name: node6
+    image: node6
+    build:
+      "./Ethereum/Farm0/node6"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node6
+      --syncmode full
+      --port 30340
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8577
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8578
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x7d842301f5e0d12db70176a2bb065f038fe90ed2
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30340:30340"
+      - "8577:8577"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node6:
+    image: device_node6
+    environment:
+      - CONTAINER_NAME=device_node6
+      - FARM_ID=farm_0
+      - HTTP_PORT=8577
+    container_name: device_node6
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node6
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node7:
+    hostname: node7
+    container_name: node7
+    image: node7
+    build:
+      "./Ethereum/Farm0/node7"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node7
+      --syncmode full
+      --port 30347
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8586
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8587
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x4090acc4b6a0df7fd222cf33d486877f70649a32
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30347:30347"
+      - "8586:8586"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node7:
+    image: device_node7
+    environment:
+      - CONTAINER_NAME=device_node7
+      - FARM_ID=farm_0
+      - HTTP_PORT=8586
+    container_name: device_node7
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node7
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node8:
+    hostname: node8
+    container_name: node8
+    image: node8
+    build:
+      "./Ethereum/Farm0/node8"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node8
+      --syncmode full
+      --port 30355
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8596
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8597
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x0d6f25f3054f6b3b69c83727f727cf525b434096
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30355:30355"
+      - "8596:8596"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node8:
+    image: device_node8
+    environment:
+      - CONTAINER_NAME=device_node8
+      - FARM_ID=farm_0
+      - HTTP_PORT=8596
+    container_name: device_node8
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node8
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node9:
+    hostname: node9
+    container_name: node9
+    image: node9
+    build:
+      "./Ethereum/Farm0/node9"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node9
+      --syncmode full
+      --port 30364
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8607
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8608
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x306461bc58b14c6c5d8885d9f5339707dde19c1c
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30364:30364"
+      - "8607:8607"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node9:
+    image: device_node9
+    environment:
+      - CONTAINER_NAME=device_node9
+      - FARM_ID=farm_0
+      - HTTP_PORT=8607
+    container_name: device_node9
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node9
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node10:
+    hostname: node10
+    container_name: node10
+    image: node10
+    build:
+      "./Ethereum/Farm0/node10"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node10
+      --syncmode full
+      --port 30374
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8619
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8620
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x5ef4814910d4b4ac24bc5f5aa3969b3a0208ae92
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30374:30374"
+      - "8619:8619"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node10:
+    image: device_node10
+    environment:
+      - CONTAINER_NAME=device_node10
+      - FARM_ID=farm_0
+      - HTTP_PORT=8619
+    container_name: device_node10
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node10
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node11:
+    hostname: node11
+    container_name: node11
+    image: node11
+    build:
+      "./Ethereum/Farm0/node11"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node11
+      --syncmode full
+      --port 30385
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8632
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8633
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xafe61cf630e2f6678d4698c9ff1c4030fd3a375c
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30385:30385"
+      - "8632:8632"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node11:
+    image: device_node11
+    environment:
+      - CONTAINER_NAME=device_node11
+      - FARM_ID=farm_0
+      - HTTP_PORT=8632
+    container_name: device_node11
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node11
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node12:
+    hostname: node12
+    container_name: node12
+    image: node12
+    build:
+      "./Ethereum/Farm0/node12"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node12
+      --syncmode full
+      --port 30397
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8646
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8647
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xfa71ffa7a3d0564e3a035a239f5ec89aafd2b4c2
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30397:30397"
+      - "8646:8646"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node12:
+    image: device_node12
+    environment:
+      - CONTAINER_NAME=device_node12
+      - FARM_ID=farm_0
+      - HTTP_PORT=8646
+    container_name: device_node12
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node12
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node13:
+    hostname: node13
+    container_name: node13
+    image: node13
+    build:
+      "./Ethereum/Farm0/node13"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node13
+      --syncmode full
+      --port 30410
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8661
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8662
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x116beea4f7a9dfe8e079d8e8ae711c21db4a5206
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30410:30410"
+      - "8661:8661"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node13:
+    image: device_node13
+    environment:
+      - CONTAINER_NAME=device_node13
+      - FARM_ID=farm_0
+      - HTTP_PORT=8661
+    container_name: device_node13
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node13
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node14:
+    hostname: node14
+    container_name: node14
+    image: node14
+    build:
+      "./Ethereum/Farm0/node14"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node14
+      --syncmode full
+      --port 30424
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8677
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8678
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x4b0bb456b6703862faad43b855f233f3d6841839
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30424:30424"
+      - "8677:8677"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node14:
+    image: device_node14
+    environment:
+      - CONTAINER_NAME=device_node14
+      - FARM_ID=farm_0
+      - HTTP_PORT=8677
+    container_name: device_node14
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node14
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node15:
+    hostname: node15
+    container_name: node15
+    image: node15
+    build:
+      "./Ethereum/Farm0/node15"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node15
+      --syncmode full
+      --port 30439
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8694
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8695
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xc506d51dbd2c88d9eac2aa2b17fe2af5fbf9a157
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30439:30439"
+      - "8694:8694"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node15:
+    image: device_node15
+    environment:
+      - CONTAINER_NAME=device_node15
+      - FARM_ID=farm_0
+      - HTTP_PORT=8694
+    container_name: device_node15
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node15
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node16:
+    hostname: node16
+    container_name: node16
+    image: node16
+    build:
+      "./Ethereum/Farm0/node16"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node16
+      --syncmode full
+      --port 30455
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8712
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8713
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xaed3b95105efe6eb189d4547612c8413bb62400a
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30455:30455"
+      - "8712:8712"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node16:
+    image: device_node16
+    environment:
+      - CONTAINER_NAME=device_node16
+      - FARM_ID=farm_0
+      - HTTP_PORT=8712
+    container_name: device_node16
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node16
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node17:
+    hostname: node17
+    container_name: node17
+    image: node17
+    build:
+      "./Ethereum/Farm0/node17"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node17
+      --syncmode full
+      --port 30472
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8731
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8732
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x898c37ae02166c117a6d064d3f27c58827396d74
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30472:30472"
+      - "8731:8731"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node17:
+    image: device_node17
+    environment:
+      - CONTAINER_NAME=device_node17
+      - FARM_ID=farm_0
+      - HTTP_PORT=8731
+    container_name: device_node17
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node17
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node18:
+    hostname: node18
+    container_name: node18
+    image: node18
+    build:
+      "./Ethereum/Farm0/node18"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node18
+      --syncmode full
+      --port 30490
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8751
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8752
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xe23286a11d607d52c5e5f2b6a05a401fcbc9cff3
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30490:30490"
+      - "8751:8751"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node18:
+    image: device_node18
+    environment:
+      - CONTAINER_NAME=device_node18
+      - FARM_ID=farm_0
+      - HTTP_PORT=8751
+    container_name: device_node18
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node18
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node19:
+    hostname: node19
+    container_name: node19
+    image: node19
+    build:
+      "./Ethereum/Farm0/node19"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node19
+      --syncmode full
+      --port 30509
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8772
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8773
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x78ce6330343649e4bd7187b058942bfdf05e8663
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30509:30509"
+      - "8772:8772"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node19:
+    image: device_node19
+    environment:
+      - CONTAINER_NAME=device_node19
+      - FARM_ID=farm_0
+      - HTTP_PORT=8772
+    container_name: device_node19
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node19
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node20:
+    hostname: node20
+    container_name: node20
+    image: node20
+    build:
+      "./Ethereum/Farm0/node20"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node20
+      --syncmode full
+      --port 30529
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8794
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8795
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x6b207ed9f7dab2c8266aef23129a9878fb53a9b9
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30529:30529"
+      - "8794:8794"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node20:
+    image: device_node20
+    environment:
+      - CONTAINER_NAME=device_node20
+      - FARM_ID=farm_0
+      - HTTP_PORT=8794
+    container_name: device_node20
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node20
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node21:
+    hostname: node21
+    container_name: node21
+    image: node21
+    build:
+      "./Ethereum/Farm0/node21"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node21
+      --syncmode full
+      --port 30550
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8817
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8818
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x1b38827c922dd0279c1ddc02d747926d793c193e
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30550:30550"
+      - "8817:8817"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node21:
+    image: device_node21
+    environment:
+      - CONTAINER_NAME=device_node21
+      - FARM_ID=farm_0
+      - HTTP_PORT=8817
+    container_name: device_node21
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node21
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node22:
+    hostname: node22
+    container_name: node22
+    image: node22
+    build:
+      "./Ethereum/Farm0/node22"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node22
+      --syncmode full
+      --port 30572
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8841
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8842
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x16b8e8fff22ee8e91f727bf0abfb9462d58d8ba5
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30572:30572"
+      - "8841:8841"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node22:
+    image: device_node22
+    environment:
+      - CONTAINER_NAME=device_node22
+      - FARM_ID=farm_0
+      - HTTP_PORT=8841
+    container_name: device_node22
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node22
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node23:
+    hostname: node23
+    container_name: node23
+    image: node23
+    build:
+      "./Ethereum/Farm0/node23"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node23
+      --syncmode full
+      --port 30595
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8866
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8867
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xf5e735a428d87c754b264e88db1dc1b4eaf03e28
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30595:30595"
+      - "8866:8866"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node23:
+    image: device_node23
+    environment:
+      - CONTAINER_NAME=device_node23
+      - FARM_ID=farm_0
+      - HTTP_PORT=8866
+    container_name: device_node23
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node23
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node24:
+    hostname: node24
+    container_name: node24
+    image: node24
+    build:
+      "./Ethereum/Farm0/node24"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node24
+      --syncmode full
+      --port 30619
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8892
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8893
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xbd02cd8cb9e73ee7a23452e07669edd5c12903b7
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30619:30619"
+      - "8892:8892"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node24:
+    image: device_node24
+    environment:
+      - CONTAINER_NAME=device_node24
+      - FARM_ID=farm_0
+      - HTTP_PORT=8892
+    container_name: device_node24
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node24
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node25:
+    hostname: node25
+    container_name: node25
+    image: node25
+    build:
+      "./Ethereum/Farm0/node25"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node25
+      --syncmode full
+      --port 30644
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8919
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8920
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xaef4063bcd3d85e7cf9039c8fa1e17adbfb5249b
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30644:30644"
+      - "8919:8919"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node25:
+    image: device_node25
+    environment:
+      - CONTAINER_NAME=device_node25
+      - FARM_ID=farm_0
+      - HTTP_PORT=8919
+    container_name: device_node25
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node25
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node26:
+    hostname: node26
+    container_name: node26
+    image: node26
+    build:
+      "./Ethereum/Farm0/node26"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node26
+      --syncmode full
+      --port 30670
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8947
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8948
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xfc50c84235c9fb9e06b0b7206023d4feb1e5634b
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30670:30670"
+      - "8947:8947"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node26:
+    image: device_node26
+    environment:
+      - CONTAINER_NAME=device_node26
+      - FARM_ID=farm_0
+      - HTTP_PORT=8947
+    container_name: device_node26
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node26
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node27:
+    hostname: node27
+    container_name: node27
+    image: node27
+    build:
+      "./Ethereum/Farm0/node27"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node27
+      --syncmode full
+      --port 30697
+      --http
+      --http.addr 172.16.5.1
+      --http.port 8976
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 8977
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x9572206d81fa611cc90188e6e0544b34064c9a1f
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30697:30697"
+      - "8976:8976"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node27:
+    image: device_node27
+    environment:
+      - CONTAINER_NAME=device_node27
+      - FARM_ID=farm_0
+      - HTTP_PORT=8976
+    container_name: device_node27
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node27
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node28:
+    hostname: node28
+    container_name: node28
+    image: node28
+    build:
+      "./Ethereum/Farm0/node28"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node28
+      --syncmode full
+      --port 30725
+      --http
+      --http.addr 172.16.5.1
+      --http.port 9006
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 9007
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0xa224f2288e51920b584c6c4c8aa13e10a8c9b761
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30725:30725"
+      - "9006:9006"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node28:
+    image: device_node28
+    environment:
+      - CONTAINER_NAME=device_node28
+      - FARM_ID=farm_0
+      - HTTP_PORT=9006
+    container_name: device_node28
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node28
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node29:
+    hostname: node29
+    container_name: node29
+    image: node29
+    build:
+      "./Ethereum/Farm0/node29"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node29
+      --syncmode full
+      --port 30754
+      --http
+      --http.addr 172.16.5.1
+      --http.port 9037
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 9038
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x4bbbbb65b098a4043a68e35ddca2632cfafef791
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30754:30754"
+      - "9037:9037"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node29:
+    image: device_node29
+    environment:
+      - CONTAINER_NAME=device_node29
+      - FARM_ID=farm_0
+      - HTTP_PORT=9037
+    container_name: device_node29
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node29
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  node30:
+    hostname: node30
+    container_name: node30
+    image: node30
+    build:
+      "./Ethereum/Farm0/node30"
+    mem_limit: 1gb
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+    command:
+      --datadir /app/node30
+      --syncmode full
+      --port 30784
+      --http
+      --http.addr 172.16.5.1
+      --http.port 9069
+      --http.api eth,net,web3,miner,admin
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --ipcpath /app/geth.ipc
+      --authrpc.port 9070
+      --http.corsdomain=*
+      --networkid=1214
+      --unlock 0x0a05023852c1e6d41a7dd28656f5de58eed32160
+      --password /app/password.txt
+      --allow-insecure-unlock console
+    ports:
+      - "30784:30784"
+      - "9069:9069"
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node30:
+    image: device_node30
+    environment:
+      - CONTAINER_NAME=device_node30
+      - FARM_ID=farm_0
+      - HTTP_PORT=9069
+    container_name: device_node30
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node30
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 

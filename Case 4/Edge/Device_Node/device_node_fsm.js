@@ -174,6 +174,7 @@ async function importOutputIpnsKeyName(ipfs) {
 
 async function checkPrivateCatalog(ipfs) {
   
+  console.log("Checking private catalog...");
   await importCatalogIpnsKeyName(ipfs);
   await importOutputIpnsKeyName(ipfs);
 
@@ -307,16 +308,67 @@ async function catIpfs(ipfs, cid) {
   }
 }
 
-// async function catIpfs(ipfs, cid) {
-//   const data = ipfs.cat(cid);
-//   const metadata_chunks = []
-//   for await (const chunk of data) {
-//       metadata_chunks.push(chunk)
-//   }
-//   const contentString = Buffer.concat(metadata_chunks).toString()
-  
-//   return (contentString);
-// }
+async function resolveIpnsKeyCLI(ipns_key) {
+  return new Promise((resolve, reject) => {
+    const command = `ipfs name resolve /ipns/${ipns_key}`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error executing command: ${error.message}\n`);
+        return;
+      }
+
+      if (stderr) {
+        reject(`Command error: ${stderr}\n`);
+        return;
+      }
+
+      console.log("Output IPNS CLI: ", stdout);
+
+      const resolvedCID = stdout.trim(); // Trim to remove leading/trailing whitespace
+
+      resolve(resolvedCID);
+    });
+  });
+}
+
+async function resolveIpnsKey(ipfs, ipns_key) {
+  let cid;
+  let import_flag = false;
+
+  while(true) {
+
+    console.log("Resolving again with IPNS KEY: ", ipns_key);
+    for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
+      cid = name;
+    }
+
+    if(cid) {
+      console.log("CID Resolved : ", cid);
+      break;
+    } else {
+      console.log(`Error resolving IPNS key: [${cid}]\n`);
+      console.log("Trying to resolve by CLI...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log("Resolving IPNS with CLI...");
+      cid = await resolveIpnsKeyCLI(ipns_key);
+      console.log("Resolved CID with CLI: ", cid);
+
+      if(cid == "" || !cid) {
+        console.log(`Error resolving IPNS key: [${cid}]\n`);
+        console.log("Trying again...");
+      } else {
+        console.log("CID Resolved: ", cid);
+        return cid;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  return cid;
+}
 
 async function generateNodeIpnsKey(ipfs, deviceID) {
   var keyExists = false;
@@ -370,15 +422,15 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
 }
 
 async function checkDatasetIpns(ipfs, deviceID) {
+  console.log("Checking dataset IPNS...");
+
   const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
   
   let cid;
   console.log("\n");
 
-  for await (const name of ipfs.name.resolve(`/ipns/${catalogIpnsKey}`)) {
-    cid = name;
-  }
+  cid = await resolveIpnsKey(ipfs, catalogIpnsKey);
 
   console.log("CID: ", cid.replace('/ipfs/', ''));
 
@@ -407,15 +459,15 @@ async function checkDatasetIpns(ipfs, deviceID) {
 }
 
 async function getLastIpfsCid(ipfs, deviceID) {
+  console.log("Getting Last IPNS CID...");
+
   const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
 
   let cid;
-  for await (const name of ipfs.name.resolve(`/ipns/${catalogIpnsKey}`)) {
-    cid = name;
-  }
 
-  console.log("CatalogIpnsKey: ", catalogIpnsKey)
+  cid = await resolveIpnsKey(ipfs, catalogIpnsKey);
+
   console.log("CID: ", cid.replace('/ipfs/', ''));
 
   var contentString = "";
@@ -945,6 +997,8 @@ function waitForEvents() {
 
 async function getFarmMenuAddr(ipfs) {
 
+    console.log("Getting Farm Menu Addr...");
+
     let farmMenuAddr = "";
     let result = "";
     let import_flag = false;
@@ -1105,11 +1159,23 @@ async function node_fsm() {
         const outputPath = "/Results";
         fs.mkdirSync(outputPath, { recursive: true }); 
 
+
+        /// First creates one file per device
         // File path
         const filePath = path.join(outputPath, `farm${FARM_ID}_device_node${deviceID}.txt`);
 
         const csvData = `${n};${elapsedTime};${average}\n`;
         fs.appendFile(filePath, csvData, (err) => {
+        if (err) throw err;
+          console.log('Data appended to the CSV file.');
+        });
+
+        //Then appends the result to a single file that will stores all results ever.
+        // in this file, we are not storing the N value!
+        const singlFilePath = path.join(outputPath, `farm${FARM_ID}_device_nodes_history.txt`);
+
+        const singleFileCsvData = `${elapsedTime};${average}\n`;
+        fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
         if (err) throw err;
           console.log('Data appended to the CSV file.');
         });

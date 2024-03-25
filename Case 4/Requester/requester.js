@@ -402,9 +402,8 @@ async function main() {
                 console.log("Previous CID: ", previousCid);
                 console.log("Output CID: ", outputCid);
     
-    
                 let timeoutReached = false;
-                const timeoutDuration = 1*60000; // Timeout duration in milliseconds (5*60 seconds)
+                const timeoutDuration = 30*1000; // Timeout duration in milliseconds
 
                 // Start a timeout timer
                 const timeoutTimer = setTimeout(() => {
@@ -483,7 +482,7 @@ async function main() {
                   // in this file, we are not storing the N value!
                   const singlFilePath = path.join(outputPath, `farm_requester_nodes_history.txt`);
 
-                  const singleFileCsvData = `${elapsedTime};${average}\n`;
+                  const singleFileCsvData = `${elapsedTimeSeconds};${average}\n`;
                   fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
                   if (err) throw err;
                     console.log('Data appended to the CSV file.');

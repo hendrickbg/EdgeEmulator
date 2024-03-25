@@ -1,0 +1,8 @@
+=============== Mar 24, 2024 (-03) ===============
+18:37:54.987223 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+18:37:55.061094 db@open opening
+18:37:55.071304 version@stat F·[] S·0B[] Sc·[]
+18:37:55.103247 db@janitor F·2 G·0
+18:37:55.103293 db@open done T·42.159318ms
+18:57:10.821554 db@close closing
+18:57:10.821742 db@close done T·185.039µs

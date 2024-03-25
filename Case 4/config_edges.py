@@ -102,24 +102,24 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
     
-  requester_node{farm_id}:
-    image: requester_node{farm_id}
-    environment:
-      - CONTAINER_NAME=requester_node{farm_id}
-      - FARM_ID=farm_{farm_id}
-    container_name: requester_node{farm_id}
-    mem_limit: 1g
-    tty: true
-    depends_on:
-      - bootnode
-      - node0
-      - edge_polygon_node{farm_id}
-    build: 
-      "./Requester/"
-    volumes:
-      - requester_nodes_volume:/Results
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
+#   requester_node{farm_id}:
+#     image: requester_node{farm_id}
+#     environment:
+#       - CONTAINER_NAME=requester_node{farm_id}
+#       - FARM_ID=farm_{farm_id}
+#     container_name: requester_node{farm_id}
+#     mem_limit: 1g
+#     tty: true
+#     depends_on:
+#       - bootnode
+#       - node0
+#       - edge_polygon_node{farm_id}
+#     build: 
+#       "./Requester/"
+#     volumes:
+#       - requester_nodes_volume:/Results
+#     extra_hosts:
+#       - "host.docker.internal:172.17.0.1"
 '''
     
     else:

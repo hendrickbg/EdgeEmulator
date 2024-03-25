@@ -39,18 +39,19 @@ let farmMenuContract;
 
 ////////////////////////////////////////PRIVATE ETHEREUM CODE/////////////////////////////////////////////////////
 
-const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
+// const privateProvider = new ethers.providers.JsonRpcProvider("http://172.16.5.1:8545");
 
 // Read contract bytecode from file
 const contractHex = fs.readFileSync('contractHex.txt', 'utf8');
 const privContractAbi = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"catalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getCatalogIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOutputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getPrivateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"outputIpnsPrivateKey","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"privateKeyCid","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"_caralog_ipns_key","type":"string"}],"name":"setCatalogIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_key","type":"string"}],"name":"setOuputIpnsKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_output_ipns_private_key","type":"string"}],"name":"setOutputIpnsPrivateKey","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_sk_cid","type":"string"}],"name":"setPrivateKeyCid","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
-const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
+// const contractInterface = new ethers.ContractFactory(privContractAbi, contractHex, privateProvider.getSigner());
 let gtwCatalogContract;
 
 let gtwContractAddress;
 
-const web3 = new Web3('http://172.16.5.1:8545');
+// const web3 = new Web3('http://172.16.5.1:8545');
+let web3;
 
 // Function to scan recent blocks for contract creation transactions
 async function getLastScAddress() {
@@ -101,20 +102,6 @@ async function waitForNetworkReady(ipfs) {
   }
 }
 
-async function deployContract() {
-  try {
-      // Deploy the contract
-      gtwCatalogContract = await contractInterface.deploy();
-      
-      // Contract deployed successfully, you can access its address and other details
-      console.log('Contract deployed at address:', gtwCatalogContract.address);
-      return gtwCatalogContract.address;
-  } catch (error) {
-      console.error('Error deploying contract:', error);
-      return null;
-  }
-}
-
 async function getGtwScAddress() {
   
   while(true) {
@@ -128,10 +115,18 @@ async function getGtwScAddress() {
   }
 }
 
+async function getHttpPort() {
+  const httoPortStr = process.env.HTTP_PORT;
+  return httoPortStr;
+}
+
 async function generateGtwCatalogInstance() {
   gtwContractAddress = await getGtwScAddress();
   console.log("Gtw Sc Addr: ", gtwContractAddress);
   
+  const httpPort = await getHttpPort();
+  console.log("HTTP Port: ", httpPort);
+  web3 = new Web3(`http://172.16.5.1:${httpPort}`);
   gtwCatalogContract = await new web3.eth.Contract(privContractAbi, gtwContractAddress);
 }
 
@@ -179,6 +174,7 @@ async function importOutputIpnsKeyName(ipfs) {
 
 async function checkPrivateCatalog(ipfs) {
   
+  console.log("Checking private catalog...");
   await importCatalogIpnsKeyName(ipfs);
   await importOutputIpnsKeyName(ipfs);
 
@@ -312,16 +308,67 @@ async function catIpfs(ipfs, cid) {
   }
 }
 
-// async function catIpfs(ipfs, cid) {
-//   const data = ipfs.cat(cid);
-//   const metadata_chunks = []
-//   for await (const chunk of data) {
-//       metadata_chunks.push(chunk)
-//   }
-//   const contentString = Buffer.concat(metadata_chunks).toString()
-  
-//   return (contentString);
-// }
+async function resolveIpnsKeyCLI(ipns_key) {
+  return new Promise((resolve, reject) => {
+    const command = `ipfs name resolve /ipns/${ipns_key}`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error executing command: ${error.message}\n`);
+        return;
+      }
+
+      if (stderr) {
+        reject(`Command error: ${stderr}\n`);
+        return;
+      }
+
+      console.log("Output IPNS CLI: ", stdout);
+
+      const resolvedCID = stdout.trim(); // Trim to remove leading/trailing whitespace
+
+      resolve(resolvedCID);
+    });
+  });
+}
+
+async function resolveIpnsKey(ipfs, ipns_key) {
+  let cid;
+  let import_flag = false;
+
+  while(true) {
+
+    console.log("Resolving again with IPNS KEY: ", ipns_key);
+    for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
+      cid = name;
+    }
+
+    if(cid) {
+      console.log("CID Resolved : ", cid);
+      break;
+    } else {
+      console.log(`Error resolving IPNS key: [${cid}]\n`);
+      console.log("Trying to resolve by CLI...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log("Resolving IPNS with CLI...");
+      cid = await resolveIpnsKeyCLI(ipns_key);
+      console.log("Resolved CID with CLI: ", cid);
+
+      if(cid == "" || !cid) {
+        console.log(`Error resolving IPNS key: [${cid}]\n`);
+        console.log("Trying again...");
+      } else {
+        console.log("CID Resolved: ", cid);
+        return cid;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  return cid;
+}
 
 async function generateNodeIpnsKey(ipfs, deviceID) {
   var keyExists = false;
@@ -375,15 +422,15 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
 }
 
 async function checkDatasetIpns(ipfs, deviceID) {
+  console.log("Checking dataset IPNS...");
+
   const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
   
   let cid;
   console.log("\n");
 
-  for await (const name of ipfs.name.resolve(`/ipns/${catalogIpnsKey}`)) {
-    cid = name;
-  }
+  cid = await resolveIpnsKey(ipfs, catalogIpnsKey);
 
   console.log("CID: ", cid.replace('/ipfs/', ''));
 
@@ -412,15 +459,15 @@ async function checkDatasetIpns(ipfs, deviceID) {
 }
 
 async function getLastIpfsCid(ipfs, deviceID) {
+  console.log("Getting Last IPNS CID...");
+
   const catalogIpnsKey = await gtwCatalogContract.methods.catalogIpnsKey().call(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
 
   let cid;
-  for await (const name of ipfs.name.resolve(`/ipns/${catalogIpnsKey}`)) {
-    cid = name;
-  }
 
-  console.log("CatalogIpnsKey: ", catalogIpnsKey)
+  cid = await resolveIpnsKey(ipfs, catalogIpnsKey);
+
   console.log("CID: ", cid.replace('/ipfs/', ''));
 
   var contentString = "";
@@ -950,6 +997,8 @@ function waitForEvents() {
 
 async function getFarmMenuAddr(ipfs) {
 
+    console.log("Getting Farm Menu Addr...");
+
     let farmMenuAddr = "";
     let result = "";
     let import_flag = false;
@@ -996,7 +1045,7 @@ async function getFarmMenuAddr(ipfs) {
             console.log("Trying to resolve again...");
           }
 
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
@@ -1025,7 +1074,7 @@ async function getFarmMenuAddr(ipfs) {
 
       farmMenuAddr = "";
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 }
 
@@ -1106,8 +1155,27 @@ async function node_fsm() {
         const average = (totalElapsedTime/n);
         console.log("Average: ", average);
 
+        // Ensure the directory exists, create it if it doesn't
+        const outputPath = "/Results";
+        fs.mkdirSync(outputPath, { recursive: true }); 
+
+
+        /// First creates one file per device
+        // File path
+        const filePath = path.join(outputPath, `farm${FARM_ID}_device_node${deviceID}.txt`);
+
         const csvData = `${n};${elapsedTime};${average}\n`;
-        fs.appendFile("./app/Results/tx_results.txt", csvData, (err) => {
+        fs.appendFile(filePath, csvData, (err) => {
+        if (err) throw err;
+          console.log('Data appended to the CSV file.');
+        });
+
+        //Then appends the result to a single file that will stores all results ever.
+        // in this file, we are not storing the N value!
+        const singlFilePath = path.join(outputPath, `farm${FARM_ID}_device_nodes_history.txt`);
+
+        const singleFileCsvData = `${elapsedTime};${average}\n`;
+        fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
         if (err) throw err;
           console.log('Data appended to the CSV file.');
         });

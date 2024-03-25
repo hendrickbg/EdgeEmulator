@@ -51,8 +51,8 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     container_name: {tmp_node_id}
     image: {tmp_node_id}
     build:
-      context: ./Ethereum/Farm{farm_id}/node0
-      dockerfile: Dockerfile
+      "./Ethereum/Farm{farm_id}/node0"
+    mem_limit: 1gb
     tty: true
     depends_on:
       - bootnode
@@ -83,21 +83,43 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-  edge_polygon_{tmp_node_id}:
-    image: edge_polygon_{tmp_node_id}
+  edge_polygon_node{farm_id}:
+    image: edge_polygon_node{farm_id}
     environment:
-      - CONTAINER_NAME=edge_polygon_{tmp_node_id}
+      - CONTAINER_NAME=edge_polygon_node{farm_id}
       - FARM_ID=farm_{farm_id}
-    container_name: edge_polygon_{tmp_node_id}
+      - HTTP_PORT={http_port}
+    container_name: edge_polygon_node{farm_id}
+    # cpu_shares: 102
+    mem_limit: 1g
     tty: true
     depends_on:
       - bootnode
       - edge_polygon_node0
-      - {tmp_node_id}
+      - node{farm_id}
     build: 
-      context: ./Edge/CBG
+      "./Edge/CBG"
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+    
+#   requester_node{farm_id}:
+#     image: requester_node{farm_id}
+#     environment:
+#       - CONTAINER_NAME=requester_node{farm_id}
+#       - FARM_ID=farm_{farm_id}
+#     container_name: requester_node{farm_id}
+#     mem_limit: 1g
+#     tty: true
+#     depends_on:
+#       - bootnode
+#       - node0
+#       - edge_polygon_node{farm_id}
+#     build: 
+#       "./Requester/"
+#     volumes:
+#       - requester_nodes_volume:/Results
+#     extra_hosts:
+#       - "host.docker.internal:172.17.0.1"
 '''
     
     else:
@@ -117,8 +139,8 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     container_name: {new_service_name}
     image: {new_service_name}
     build:
-      context: ./Ethereum/Farm{farm_id}/{new_service_name if farm_id == 0 else f"node{i-1}"}
-      dockerfile: Dockerfile
+      "./Ethereum/Farm{farm_id}/{new_service_name if farm_id == 0 else f"node{i-1}"}"
+    mem_limit: 1gb
     tty: true
     depends_on:
       - bootnode
@@ -149,8 +171,9 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
   device_{new_service_name}:
     image: device_{new_service_name}
     environment:
-      - CONTAINER_NAME=device_{new_service_name}
+      - CONTAINER_NAME=device_{new_service_name if farm_id == 0 else f"node{i-1}"}
       - FARM_ID=farm_{farm_id}
+      - HTTP_PORT={http_port}
     container_name: device_{new_service_name}
     tty: true
     depends_on:
@@ -158,7 +181,10 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
       - node0
       - {new_service_name}
     build: 
-      context: ./Edge/Device_Node
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 '''

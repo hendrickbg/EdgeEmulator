@@ -1,0 +1,235 @@
+version: '3.7'
+
+volumes:
+  device_nodes_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/student/Documents/hendrick/Results/Device_Nodes
+  
+  requester_nodes_volume:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/student/Documents/hendrick/Results/Requester_Nodes
+
+services:
+  device_node46:
+    image: device_node46
+    environment:
+      - CONTAINER_NAME=device_node46
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node46
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node46
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node47:
+    image: device_node47
+    environment:
+      - CONTAINER_NAME=device_node47
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node47
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node47
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node48:
+    image: device_node48
+    environment:
+      - CONTAINER_NAME=device_node48
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node48
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node48
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node49:
+    image: device_node49
+    environment:
+      - CONTAINER_NAME=device_node49
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node49
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node49
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node50:
+    image: device_node50
+    environment:
+      - CONTAINER_NAME=device_node50
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node50
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node50
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node51:
+    image: device_node51
+    environment:
+      - CONTAINER_NAME=device_node51
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node51
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node51
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node52:
+    image: device_node52
+    environment:
+      - CONTAINER_NAME=device_node52
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node52
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node52
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+  device_node53:
+    image: device_node53
+    environment:
+      - CONTAINER_NAME=device_node53
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node53
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node53
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node54:
+    image: device_node54
+    environment:
+      - CONTAINER_NAME=device_node54
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node54
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node54
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node55:
+    image: device_node55
+    environment:
+      - CONTAINER_NAME=device_node55
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node55
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node55
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+  
+  device_node56:
+    image: device_node56
+    environment:
+      - CONTAINER_NAME=device_node56
+      - FARM_ID=farm_0
+      - HTTP_PORT=9669
+    container_name: device_node56
+    tty: true
+    depends_on:
+      - bootnode
+      - node0
+      - node56
+    build: 
+      "./Edge/Device_Node"
+    mem_limit: 1gb
+    volumes:
+      - device_nodes_volume:/Results
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"

@@ -1,0 +1,7 @@
+node.PeerCount
+admin.Peers
+admin.peers
+admin.peers.length
+admin
+admin.getPeers
+net.peerCount

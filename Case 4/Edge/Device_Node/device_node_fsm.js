@@ -338,7 +338,7 @@ async function resolveIpnsKey(ipfs, ipns_key) {
 
   while(true) {
 
-    console.log("Resolving again with IPNS KEY: ", ipns_key);
+    console.log("[resolveIpnsKey] Resolving again with IPNS KEY: ", ipns_key);
     for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
       cid = name;
     }
@@ -348,12 +348,12 @@ async function resolveIpnsKey(ipfs, ipns_key) {
       break;
     } else {
       console.log(`Error resolving IPNS key: [${cid}]\n`);
-      console.log("Trying to resolve by CLI...");
+      console.log("Trying to resolve by OTHER HOST...");
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log("Resolving IPNS with CLI...");
-      cid = await resolveIpnsKeyCLI(ipns_key);
-      console.log("Resolved CID with CLI: ", cid);
+      console.log("Resolving IPNS with OTHER HOST...");
+      cid = await resolveConnectingToHost(ipns_key);
+      console.log("Resolved CID with OTHER HOST: ", cid);
 
       if(cid == "" || !cid) {
         console.log(`Error resolving IPNS key: [${cid}]\n`);
@@ -402,10 +402,8 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
   let ipfsCid;
 
   console.log("IPNS Name: ", ipnsName);
-  for await (const name of ipfs.name.resolve(ipnsName)) {
-    ipfsCid = name;
-  }
 
+  ipfsCid = await resolveConnectingToHost(ipnsName);
   console.log("ipfsCID: ", ipfsCid);
 
   const metadata = deviceID + ';' + key.id + ';' + ipfsCid.replace('/ipfs/', '');
@@ -415,6 +413,9 @@ async function generateNodeIpnsKey(ipfs, deviceID) {
   await ipfsAddLocal(ipfs, metadata); //replicate to accelerate the ipns publish
 
   console.log("fileAdded: ", ipfs_cid);
+
+  console.log("Waiting for previous device! Resolving IPNS KEY: ", key.id);
+  //await waitForPreviousDevice(ipfs, key.id, deviceID);
 
   //no caso do gateway, ele ja tem a chave, se nao teria que importar
   //const catalogIpnsKeyName = await importCatalogIpnsKeyName(ipfs);
@@ -995,6 +996,65 @@ function waitForEvents() {
   });
 }
 
+async function resolveConnectingToHost(ipns_key) {
+  const { create } = await import('ipfs-http-client');
+  const ipfs = await create({ url: 'http://172.16.5.1:5001'});
+
+  let cid;
+
+  console.log("Resolving again with other host: ", ipns_key);
+
+  if(ipns_key.includes("/ipns/")) {
+    for await (const name of ipfs.name.resolve(`${ipns_key}`)) {
+      cid = name;
+    }
+  } else {
+    for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
+      cid = name;
+    }
+  }
+
+  return cid;
+}
+
+async function waitForPreviousDevice(ipfs, ipnsName, this_device_id) {
+  let ipfsCid;
+
+  //busca pelo ultimo elemento da fila
+  console.log("IpnsName: ", ipnsName);
+
+  while(true) {
+    
+    ipfsCid = await resolveIpnsKey(ipfs, ipnsName);
+
+    const device_list_data = await catIpfs(ipfs, ipfsCid.replace('/ipfs/', ''));
+    console.log("device_list_data: ", device_list_data);
+
+    const tmp = device_list_data.split(';');
+    console.log("tmp: ", tmp);
+    
+    const device_id_tmp = tmp[0];
+    console.log("device_id_tmp: ", device_id_tmp);
+
+    const decimal_device_id_tmp = parseInt(device_id_tmp, 10);
+    console.log("decimal_device_id_tmp: ", decimal_device_id_tmp);
+
+    const decimal_device_id = parseInt(device_id_tmp, 10);
+    console.log("decimal_device_id: ", decimal_device_id);
+    
+    const _decimal_this_device_id = parseInt(this_device_id, 10);
+
+    //try to find the previous one! shall be always device_id-1
+    if((((decimal_device_id_tmp == (_decimal_this_device_id-1)) && (decimal_device_id_tmp >= 0)) || (_decimal_this_device_id == 1))) {
+      console.log("Previous Device found!");
+      break;
+    } else {
+      console.log("Previous Device not found! Trying again...");
+      await new Promise((resolve) => setTimeout(resolve, 2*1000)); // Wait for 5 seconds
+    }
+  }
+}
+
 async function getFarmMenuAddr(ipfs) {
 
     console.log("Getting Farm Menu Addr...");
@@ -1024,7 +1084,7 @@ async function getFarmMenuAddr(ipfs) {
       
       while(true) {
 
-        console.log("Resolving again with IPNS KEY: ", result);
+        console.log("[getFarmMenuAddr] Resolving again with IPNS KEY: ", result);
         for await (const name of ipfs.name.resolve(`/ipns/${result}`)) {
           cid = name;
           console.log("CID RESOLVED DEBUG: ", cid);
@@ -1042,7 +1102,15 @@ async function getFarmMenuAddr(ipfs) {
             await importFarmMenuIpnsKeyName(ipfs);
           
           } else {
-            console.log("Trying to resolve again...");
+            console.log("Trying to resolve again BUT WITH OTHER HOST...");
+            cid = await resolveConnectingToHost(result);
+            console.log("CID resolved: ", cid);
+            
+            if(cid) {
+              break;
+            } else{
+              console.log("Trying to resolve again...");
+            }
           }
 
           await new Promise(resolve => setTimeout(resolve, 2000));

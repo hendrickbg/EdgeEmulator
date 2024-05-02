@@ -269,7 +269,7 @@ const writeToFile = (filePath, content) => {
   });
 };
 
-async function updaIpfsList(ipfs, hash) {
+async function updateIpfsList(ipfs, hash) {
   const currentTimestamp = moment().format('YYYY-MM-DD HH:mm:ss:SSS');
   const metadata = currentTimestamp + ';' + hash;
   
@@ -430,6 +430,8 @@ async function checkDatasetIpns(ipfs, deviceID) {
 }
 
 async function getLastIpfsCid(ipfs, deviceID) {
+  let previous_cid = "";
+
   const catalogIpnsKey = await gtwCatalogContract.catalogIpnsKey(); 
   console.log("CatalogIpnsKey: ", catalogIpnsKey);
 
@@ -461,13 +463,15 @@ async function getLastIpfsCid(ipfs, deviceID) {
       }
       //console.log()
       return (cidTmp.replace('/ipfs/', ''));
+    } else if(ipfsContentList[0] != '-1') {
+      previous_cid = cid.replace('/ipfs/', '');
     }
 
     cid = ipfsContentList[2];
 
   }
 
-  return "";
+  return previous_cid;
 }
 
 async function publishToIpns(ipfs, cid, keyName, timeout_ms) {
@@ -1103,7 +1107,7 @@ async function node_fsm() {
       if(info.eventName == "DataDeviceRequested") {
         console.log("Searching for Device: ", info.deviceID);
         const lastCid = await getLastIpfsCid(ipfs, info.deviceID);
-        const txCid = await updaIpfsList(ipfs, lastCid);
+        const txCid = await updateIpfsList(ipfs, lastCid);
 
         console.log("CID that will be sent: ", txCid);
 

@@ -1,0 +1,56 @@
+inicio do test: 21:20
+Inicio do segundo teste: 11:47
+
+
+Inicio do Terceiro teste: 10:40
+
+#########################
+
+watchoutput: corta até 10k e deixa somente 50k linhas
+
+30-1
+Inicio do Test: 16:16
+Término: 17:58
+
+30-5
+Inicio do Test: 16:16
+
+30-10
+Inicio do Test: 08:21
+
+20-10
+Inicio do Test: 11:30
+
+20-5
+Inicio do Test: 14:15
+
+20-1
+Inicio do Test: 14:40
+
+10-10
+Inicio do Test: 18:32
+
+10-5
+Inicio do Test: 20:05
+
+10-1
+Inicio do Test: 22:30
+
+1-10
+Inicio do Test: 08:30
+
+1-5
+DONE
+
+1-1
+Inicio do Test: 08:30
+
+
+########################################
+
+Refazendo 10-10: parou no Requester Node 35
+
+
+Refazendo 30-1: parou no Requester Node 32
+
+Refazendo 30-5: parou no Requester Node 58

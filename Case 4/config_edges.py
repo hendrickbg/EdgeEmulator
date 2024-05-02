@@ -64,7 +64,7 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
       --http.addr 172.16.5.1
       --http.port {http_port}
       --http.api eth,net,web3,miner,admin,personal
-      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@172.16.5.1:30300"
       --ipcpath /app/geth.ipc
       --authrpc.port {auth_port}
       --http.corsdomain=*
@@ -83,24 +83,24 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
 
-  edge_polygon_node{farm_id}:
-    image: edge_polygon_node{farm_id}
-    environment:
-      - CONTAINER_NAME=edge_polygon_node{farm_id}
-      - FARM_ID=farm_{farm_id}
-      - HTTP_PORT={http_port}
-    container_name: edge_polygon_node{farm_id}
-    # cpu_shares: 102
-    mem_limit: 1g
-    tty: true
-    depends_on:
-      - bootnode
-      - edge_polygon_node0
-      - node{farm_id}
-    build: 
-      "./Edge/CBG"
-    extra_hosts:
-      - "host.docker.internal:172.17.0.1"
+#   edge_polygon_node{farm_id}:
+#     image: edge_polygon_node{farm_id}
+#     environment:
+#       - CONTAINER_NAME=edge_polygon_node{farm_id}
+#       - FARM_ID=farm_{farm_id}
+#       - HTTP_PORT={http_port}
+#     container_name: edge_polygon_node{farm_id}
+#     # cpu_shares: 102
+#     mem_limit: 1g
+#     tty: true
+#     depends_on:
+#       - bootnode
+#       - edge_polygon_node0
+#       - node{farm_id}
+#     build: 
+#       "./Edge/CBG"
+#     extra_hosts:
+#       - "host.docker.internal:172.17.0.1"
     
 #   requester_node{farm_id}:
 #     image: requester_node{farm_id}
@@ -153,7 +153,7 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
       --http.addr 172.16.5.1
       --http.port {http_port}
       --http.api eth,net,web3,miner,admin
-      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@host.docker.internal:30300"
+      --bootnodes "enode://41a506356acaf6e5469f04847abf9e7efb1ff50805b1c4219580160c2aec0caf23b6aede3397e8939ee860b2bdb897b1caa3b0f1521a9fa3a95b23a6915b7a60@172.16.5.1:30300"
       --ipcpath /app/geth.ipc
       --authrpc.port {auth_port}
       --http.corsdomain=*
@@ -179,6 +179,7 @@ def append_nodes(original_content, num_nodes, node_addr, farm_id):
     depends_on:
       - bootnode
       - node0
+      - device_node1
       - {new_service_name}
     build: 
       "./Edge/Device_Node"

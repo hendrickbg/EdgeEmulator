@@ -239,12 +239,34 @@ async function resolveIpnsKeyCLI(ipns_key) {
   });
 }
 
+async function resolveConnectingToHost(ipns_key) {
+  const { create } = await import('ipfs-http-client');
+  const ipfs = await create({ url: 'http://172.16.5.1:5001'});
+
+  let cid;
+
+  console.log("Resolving again with other host: ", ipns_key);
+
+  if(ipns_key.includes("/ipns/")) {
+    for await (const name of ipfs.name.resolve(`${ipns_key}`)) {
+      cid = name;
+    }
+  } else {
+    for await (const name of ipfs.name.resolve(`/ipns/${ipns_key}`)) {
+      cid = name;
+    }
+  }
+
+  return cid;
+}
+
 async function resolveIpnsKey(ipfs, ipns_key) {
   let cid;
-  
+  let import_flag = false;
+
   while(true) {
 
-    console.log("Resolving IPNS KEY: ", ipns_key);
+    console.log("Resolving with IPNS KEY: ", ipns_key);
 
     if(ipns_key.includes("/ipns/")) {
       for await (const name of ipfs.name.resolve(`${ipns_key}`)) {
@@ -260,16 +282,16 @@ async function resolveIpnsKey(ipfs, ipns_key) {
       console.log("CID Resolved : ", cid);
       break;
     } else {
-      console.log(`Error resolving IPNS key: [${cid}]`);
-      console.log("Trying to resolve by CLI...");
+      console.log(`Error resolving IPNS key: [${cid}]\n`);
+      console.log("Trying to resolve by OTHER HOST...");
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log("Resolving IPNS with CLI...");
-      cid = await resolveIpnsKeyCLI(ipns_key);
-      console.log("Resolved CID with CLI: ", cid);
+      console.log("Resolving IPNS with OTHER HOST...");
+      cid = await resolveConnectingToHost(ipns_key);
+      console.log("Resolved CID with OTHER HOST: ", cid);
 
       if(cid == "" || !cid) {
-        console.log(`Error resolving IPNS key: [${cid}]`);
+        console.log(`Error resolving IPNS key: [${cid}]\n`);
         console.log("Trying again...");
       } else {
         console.log("CID Resolved: ", cid);
@@ -290,9 +312,10 @@ async function main() {
     let farmDictionary = {};
     let cid = "";
     let result;
+    let try_count = 0;
 
     //waits 5 minutos to properly initialize the system
-    await new Promise((resolve) => setTimeout(resolve, 1000*60*3));
+    await new Promise((resolve) => setTimeout(resolve, 1000*60*5));
 
     await importFarmMenuIpnsKeyName(ipfs);
 
@@ -381,128 +404,103 @@ async function main() {
     while(true) {
         
         try {
-            // for await (const name of ipfs.name.resolve(ipnsName)) {
-            //     previousCid = name;
-            // }
-
             previousCid = await resolveIpnsKey(ipfs, ipnsName);
-    
             outputCid = previousCid;
-    
             const device_requested = REQUESTED_DEVICE_ID;
-            
             const startTime = process.hrtime();
     
-            while(true) {
-    
-                const tx = await farmMenuContract.requestDeviceData(device_requested);
-                const receipt = await tx.wait();
-                console.log("Transaction done!");
-    
-                console.log("Previous CID: ", previousCid);
-                console.log("Output CID: ", outputCid);
-    
-                let timeoutReached = false;
-                const timeoutDuration = 30*1000; // Timeout duration in milliseconds
+            const tx = await farmMenuContract.requestDeviceData(device_requested);
+            const receipt = await tx.wait();
+            console.log("Transaction done!");
 
-                // Start a timeout timer
-                const timeoutTimer = setTimeout(() => {
-                    timeoutReached = true;
-                }, timeoutDuration);
+            console.log("Previous CID: ", previousCid);
+            console.log("Output CID: ", outputCid);
 
-                // Run the loop until either the condition is met or the timeout is reached
-                while ((outputCid == previousCid) && !timeoutReached) {
-                    for await (const name of ipfs.name.resolve(ipnsName)) {
-                        outputCid = name;
-                    }
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
+            let timeoutReached = false;
+            const timeoutDuration = 30*1000; // Timeout duration in milliseconds
+            // Start a timeout timer
+            const timeoutTimer = setTimeout(() => {
+                timeoutReached = true;
+            }, timeoutDuration);
+            // Run the loop until either the condition is met or the timeout is reached
+            while ((outputCid == previousCid) && !timeoutReached) {
+                for await (const name of ipfs.name.resolve(ipnsName)) {
+                    outputCid = name;
                 }
-
-                // Clear the timeout timer
-                clearTimeout(timeoutTimer);
-
-                // Check if the loop ended due to timeout
-                if (timeoutReached) {
-                    console.log('Timeout reached while waiting for outputCid to change.');
-                    continue; // Go back to the top of the while loop
-                } else {
-                    console.log('outputCid has changed.');
-                }
-    
-                const endTime = process.hrtime(startTime);
-                const elapsedTime = endTime[0]*1000+endTime[1]/1000000;
-    
-                totalElapsedTime += elapsedTime;
-                n += 1;
-    
-                const average = (totalElapsedTime/n)/1000;
-    
-                console.log("\n\nDevice data: ", outputCid);
-                const deviceMetadata = await catIpfs(ipfs, outputCid);
-                console.log("Device Metadata: ", deviceMetadata);
-    
-                const metadataList = deviceMetadata.split(';');
-                const nextCid = metadataList[1];
-
-                if(nextCid != "" || nextCid != undefined) {
-                  console.log("Reading from CID: ", nextCid);
-                  const deviceLastData = await catIpfs(ipfs, nextCid);
-                  console.log("Device last data: ", deviceLastData);
-      
-                  const deviceLastDataList = deviceLastData.split(';');
-
-                  const elapsedTimeSeconds = elapsedTime/1000;
-                  if(elapsedTimeSeconds < bestTime) {
-                      bestTime = elapsedTimeSeconds;
-                  }
-      
-                  if(elapsedTimeSeconds > worstTime) {
-                      worstTime = elapsedTimeSeconds;
-                  }
-      
-                  console.log("Elapsed Time: ", elapsedTimeSeconds);
-                  console.log("Total elapse time: ", totalElapsedTime);
-                  console.log(`[${n}]: Worst Time: ${worstTime} --- Best Time: ${bestTime}`);
-                  console.log(`[${n}]: Avarange time: ${average}\n\n`);
-                  
-                  // Ensure the directory exists, create it if it doesn't
-                  const outputPath = "/Results";
-                  fs.mkdirSync(outputPath, { recursive: true }); 
-                  /// First creates one file per requester node
-                  // File path
-                  const filePath = path.join(outputPath, `farm${FARM_ID}_request_node${FARM_ID}.txt`);
-
-                  const csvData = `${n};${elapsedTimeSeconds};${average}\n`;
-                  fs.appendFile(filePath, csvData, (err) => {
-                      if (err) throw err;
-                      console.log('Data appended to the CSV file.');
-                  });
-
-                  //Then appends the result to a single file that will stores all results ever.
-                  // in this file, we are not storing the N value!
-                  const singlFilePath = path.join(outputPath, `farm_requester_nodes_history.txt`);
-
-                  const singleFileCsvData = `${elapsedTimeSeconds};${average}\n`;
-                  fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
-                  if (err) throw err;
-                    console.log('Data appended to the CSV file.');
-                  });
-                  
-                  previousCid = outputCid;
-
-                  await new Promise((resolve) => setTimeout(resolve, 1000*60*2));
-                
-                } else {
-                 console.log("Received data invalid! Requesting data again...");
-                }
-
-                
+                await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
             }
-    
+            // Clear the timeout timer
+            clearTimeout(timeoutTimer);
+            // Check if the loop ended due to timeout
+            if (timeoutReached) {
+                console.log('Timeout reached while waiting for outputCid to change.');
+                continue; // Go back to the top of the while loop
+            } else {
+                console.log('outputCid has changed.');
+            }
+
+            const endTime = process.hrtime(startTime);
+            const elapsedTime = endTime[0]*1000+endTime[1]/1000000;
+
+            totalElapsedTime += elapsedTime;
+            n += 1;
+
+            const average = (totalElapsedTime/n)/1000;
+
+            console.log("\n\nDevice data: ", outputCid);
+            const deviceMetadata = await catIpfs(ipfs, outputCid);
+            console.log("Device Metadata: ", deviceMetadata);
+
+            const metadataList = deviceMetadata.split(';');
+            const nextCid = metadataList[1];
+            
+            
+            console.log("Reading from CID: ", nextCid);
+            const deviceLastData = await catIpfs(ipfs, nextCid);
+            console.log("Device last data: ", deviceLastData);
+
+            const deviceLastDataList = deviceLastData.split(';');
+            const elapsedTimeSeconds = elapsedTime/1000;
+            if(elapsedTimeSeconds < bestTime) {
+                bestTime = elapsedTimeSeconds;
+            }
+
+            if(elapsedTimeSeconds > worstTime) {
+                worstTime = elapsedTimeSeconds;
+            }
+
+            console.log("Elapsed Time: ", elapsedTimeSeconds);
+            console.log("Total elapse time: ", totalElapsedTime);
+            console.log(`[${n}]: Worst Time: ${worstTime} --- Best Time: ${bestTime}`);
+            console.log(`[${n}]: Avarange time: ${average}\n\n`);
+            
+            // Ensure the directory exists, create it if it doesn't
+            const outputPath = "/Results";
+            fs.mkdirSync(outputPath, { recursive: true }); 
+            /// First creates one file per requester node
+            // File path
+            const filePath = path.join(outputPath, `farm${FARM_ID}_request_node${FARM_ID}.txt`);
+            const csvData = `${n};${elapsedTimeSeconds};${average}\n`;
+            fs.appendFile(filePath, csvData, (err) => {
+                if (err) throw err;
+                console.log('Data appended to the CSV file.');
+            });
+            //Then appends the result to a single file that will stores all results ever.
+            // in this file, we are not storing the N value!
+            const singlFilePath = path.join(outputPath, `farm_requester_nodes_history.txt`);
+            const singleFileCsvData = `${elapsedTimeSeconds};${average}\n`;
+            fs.appendFile(singlFilePath, singleFileCsvData, (err) => {
+            if (err) throw err;
+              console.log('Data appended to the CSV file.');
+            });
+            
+            previousCid = outputCid;
+            await new Promise((resolve) => setTimeout(resolve, 1000*30));
+
         } catch(error) {
             console.log("Error: ", error);
             console.log("Running again...");
-            await new Promise((resolve) => setTimeout(resolve, 1000*2));
+            await new Promise((resolve) => setTimeout(resolve, 1000*1));
         }
         
     }

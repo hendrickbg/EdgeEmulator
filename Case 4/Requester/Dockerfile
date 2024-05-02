@@ -20,16 +20,15 @@ RUN ipfs init
 
 # Copy package.json and install dependencies
 COPY package.json /app
-# RUN npm install
 
-# # # Install jq
-# # RUN apk --no-cache add jq
+# # Install jq
+RUN apk --no-cache add jq
 
-# # Define the new Swarm option
-# # ENV JSON_FILE_PATH /root/.ipfs/config
+# Define the new Swarm option
+ENV JSON_FILE_PATH /root/.ipfs/config
 
-# # Execute jq command directly in the Dockerfile to update the JSON file
-# RUN jq --argjson new_swarm '["/ip4/0.0.0.0/udp/4001/quic","/ip6/::/udp/4001/quic"]' '.Addresses.Swarm = $new_swarm' "$JSON_FILE_PATH" > temp.json && \
-#     mv temp.json "$JSON_FILE_PATH"
+# Execute jq command directly in the Dockerfile to update the JSON file
+RUN jq --argjson new_swarm '["/ip4/172.16.5.1/tcp/4001","/ip4/172.16.5.1/udp/4001/quic"]' '.Addresses.Swarm += $new_swarm' "$JSON_FILE_PATH" > temp.json && \
+    mv temp.json "$JSON_FILE_PATH"
 
 CMD ["/bin/sh", "-c", "ipfs daemon & npm start"]
